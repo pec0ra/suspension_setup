@@ -35,11 +35,12 @@ class _SetupEditState extends State<SetupEdit> {
 
   @override
   void dispose() {
+    _commentController.dispose();
     _setupFormController.dispose();
     super.dispose();
   }
 
-  void _onSetupChanged(BuildContext context) {
+  Future<void> _onSetupChanged(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       var newSetup = widget.setup != null
           ? Setup.fromJson(widget.setup!.toJson())
@@ -73,7 +74,7 @@ class _SetupEditState extends State<SetupEdit> {
       if (widget.setup != null && settingChanges.changes.isNotEmpty) {
         showDialog(
           context: context,
-          builder: (context) {
+          builder: (dialogContext) {
             return AlertDialog(
               title: const Text('Comment'),
               content: TextField(
@@ -85,17 +86,17 @@ class _SetupEditState extends State<SetupEdit> {
                 TextButton(
                   child: const Text('CANCEL'),
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
                   },
                 ),
                 TextButton(
                   child: const Text('OK'),
-                  onPressed: () {
+                  onPressed: () async {
                     if (_commentController.text.isNotEmpty) {
                       settingChanges.comment = _commentController.text;
                     }
-                    _saveSetup(context, newSetup);
-                    Navigator.pop(context);
+                    Navigator.pop(dialogContext);
+                    await _saveSetup(context, newSetup);
                   },
                 ),
               ],
@@ -103,14 +104,15 @@ class _SetupEditState extends State<SetupEdit> {
           },
         );
       } else {
-        _saveSetup(context, newSetup);
+        await _saveSetup(context, newSetup);
       }
     }
   }
 
-  void _saveSetup(BuildContext context, Setup newSetup) {
-    Provider.of<SetupStorageModel>(context, listen: false)
+  Future<void> _saveSetup(BuildContext context, Setup newSetup) async {
+    await Provider.of<SetupStorageModel>(context, listen: false)
         .upsertSetup(newSetup);
+    if (!context.mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Setup saved successfully')),
@@ -124,96 +126,34 @@ class _SetupEditState extends State<SetupEdit> {
     SettingChanges settingChanges,
     Settings newSettings,
   ) {
-    int newAirPressure = int.parse(controller.airPressure.text);
-    if (settings?.airPressure != newAirPressure) {
+    void apply(SettingType type, int? oldVal, int? newVal,
+        void Function(int?) setter) {
+      if (oldVal == newVal) return;
       if (settings != null) {
         settingChanges.changes.add(SettingChange(
-          settingType: SettingType.airPressure,
-          oldValue: settings.airPressure,
-          newValue: newAirPressure,
+          settingType: type,
+          oldValue: oldVal,
+          newValue: newVal,
           suspensionType: suspensionType,
         ));
       }
-      newSettings.airPressure = newAirPressure;
+      setter(newVal);
     }
 
-    int newSag = int.parse(controller.sag.text);
-    if (settings?.sag != newSag) {
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: SettingType.sag,
-          oldValue: settings.sag,
-          newValue: newSag,
-          suspensionType: suspensionType,
-        ));
-      }
-      newSettings.sag = newSag;
-    }
-
-    int? newVolumeSpacer = int.tryParse(controller.volumeSpacer.text);
-    if (settings?.volumeSpacer != newVolumeSpacer) {
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: SettingType.volumeSpacer,
-          oldValue: settings.volumeSpacer,
-          newValue: newVolumeSpacer,
-          suspensionType: suspensionType,
-        ));
-      }
-      newSettings.volumeSpacer = newVolumeSpacer;
-    }
-
-    int newLsc = int.parse(controller.lsc.text);
-    if (settings?.lsc != newLsc) {
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: SettingType.lsc,
-          oldValue: settings.lsc,
-          newValue: newLsc,
-          suspensionType: suspensionType,
-        ));
-      }
-      newSettings.lsc = newLsc;
-    }
-
-    int? newHsc = int.tryParse(controller.hsc.text);
-    if (settings?.hsc != newHsc) {
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: SettingType.hsc,
-          oldValue: settings.hsc,
-          newValue: newHsc,
-          suspensionType: suspensionType,
-        ));
-      }
-      newSettings.hsc = newHsc;
-    }
-
-    int newLsr = int.parse(controller.lsr.text);
-    if (settings?.lsr != newLsr) {
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: SettingType.lsr,
-          oldValue: settings.lsr,
-          newValue: newLsr,
-          suspensionType: suspensionType,
-        ));
-      }
-      newSettings.lsr = newLsr;
-    }
-
-    int? newHsr = int.tryParse(controller.hsr.text);
-    if (settings?.hsr != newHsr) {
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: SettingType.hsr,
-          oldValue: settings.hsr,
-          newValue: newHsr,
-          suspensionType: suspensionType,
-        ));
-      }
-      newSettings.hsr = newHsr;
-    }
+    apply(SettingType.airPressure, settings?.airPressure,
+        int.parse(controller.airPressure.text), (v) => newSettings.airPressure = v!);
+    apply(SettingType.sag, settings?.sag,
+        int.parse(controller.sag.text), (v) => newSettings.sag = v!);
+    apply(SettingType.volumeSpacer, settings?.volumeSpacer,
+        int.tryParse(controller.volumeSpacer.text), (v) => newSettings.volumeSpacer = v);
+    apply(SettingType.lsc, settings?.lsc,
+        int.parse(controller.lsc.text), (v) => newSettings.lsc = v!);
+    apply(SettingType.hsc, settings?.hsc,
+        int.tryParse(controller.hsc.text), (v) => newSettings.hsc = v);
+    apply(SettingType.lsr, settings?.lsr,
+        int.parse(controller.lsr.text), (v) => newSettings.lsr = v!);
+    apply(SettingType.hsr, settings?.hsr,
+        int.tryParse(controller.hsr.text), (v) => newSettings.hsr = v);
   }
 
   @override

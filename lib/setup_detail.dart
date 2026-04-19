@@ -247,9 +247,10 @@ class _OverflowMenuState extends State<OverflowMenu> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Provider.of<SetupStorageModel>(context, listen: false)
+            onPressed: () async {
+              await Provider.of<SetupStorageModel>(context, listen: false)
                   .deleteSetup(widget.setup);
+              if (!context.mounted) return;
               Navigator.pop(context, 'OK');
               Navigator.pop(context);
             },

@@ -5,6 +5,14 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:suspension_setup/models/setup.dart';
 
+class SetupLoadException implements Exception {
+  final String message;
+  final Object cause;
+  SetupLoadException(this.message, this.cause);
+  @override
+  String toString() => message;
+}
+
 class SetupFileUtil {
   static Future<String> get defaultLocalFilePath async {
     final directory = await getApplicationDocumentsDirectory();
@@ -18,13 +26,15 @@ class SetupFileUtil {
     if (!await file.exists()) {
       return null;
     }
-    // Read the file
-    final contents = await file.readAsString();
-
-    var map = jsonDecode(contents).map((key, value) =>
-        MapEntry<String, Setup>(key as String, Setup.fromJson(value)));
-    Map<String, Setup> setupMap = Map<String, Setup>.from(map);
-    return setupMap;
+    try {
+      final contents = await file.readAsString();
+      final decoded = jsonDecode(contents) as Map<String, dynamic>;
+      return decoded.map((key, value) =>
+          MapEntry(key, Setup.fromJson(value as Map<String, dynamic>)));
+    } catch (e) {
+      throw SetupLoadException(
+          'Could not load your setups — the file may be corrupt.', e);
+    }
   }
 
   static Future<void> writeSetups(

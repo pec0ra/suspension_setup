@@ -11,44 +11,49 @@ import 'package:suspension_setup/models/setup.dart';
 import 'package:suspension_setup/setup_file_utils.dart';
 
 class SetupStorageModel extends ChangeNotifier {
-  final Map<String, Setup> setupMap = {};
+  final Map<String, Setup> _setupMap = {};
+  String? loadError;
 
   UnmodifiableListView<Setup> getSetupList() {
-    return UnmodifiableListView(setupMap.values);
+    return UnmodifiableListView(_setupMap.values);
   }
 
   Setup? getSetup(String id) {
-    return setupMap[id];
+    return _setupMap[id];
   }
 
   Future<void> initSetups() async {
-    var setupsFromFile = await SetupFileUtil.readSetups(
-        await SetupFileUtil.defaultLocalFilePath);
-    setupMap.clear();
-    if (setupsFromFile != null) {
-      setupMap.addAll(setupsFromFile);
+    try {
+      var setupsFromFile = await SetupFileUtil.readSetups(
+          await SetupFileUtil.defaultLocalFilePath);
+      _setupMap.clear();
+      if (setupsFromFile != null) {
+        _setupMap.addAll(setupsFromFile);
+      }
+    } on SetupLoadException catch (e) {
+      loadError = e.message;
     }
     notifyListeners();
   }
 
-  void upsertSetup(Setup setup) async {
-    setupMap[setup.id] = setup;
+  Future<void> upsertSetup(Setup setup) async {
+    _setupMap[setup.id] = setup;
     await SetupFileUtil.writeSetups(
-        setupMap, await SetupFileUtil.defaultLocalFilePath);
+        _setupMap, await SetupFileUtil.defaultLocalFilePath);
     notifyListeners();
   }
 
-  void deleteSetup(Setup setup) async {
-    setupMap.remove(setup.id);
+  Future<void> deleteSetup(Setup setup) async {
+    _setupMap.remove(setup.id);
     await SetupFileUtil.writeSetups(
-        setupMap, await SetupFileUtil.defaultLocalFilePath);
+        _setupMap, await SetupFileUtil.defaultLocalFilePath);
     notifyListeners();
   }
 
   Future<bool> backup() async {
     String date = DateFormat("yyyy-MM-dd").format(DateTime.now());
     var fileName = "suspension-setup-$date.json";
-    Uint8List fileContent = stringToUint8List(jsonEncode(setupMap));
+    Uint8List fileContent = utf8.encode(jsonEncode(_setupMap));
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select a backup file:',
       fileName: fileName,
@@ -60,19 +65,9 @@ class SetupStorageModel extends ChangeNotifier {
       // User canceled the picker
     }
     if (!Platform.isAndroid && !Platform.isIOS) {
-      await SetupFileUtil.writeSetups(setupMap, outputFile);
+      await SetupFileUtil.writeSetups(_setupMap, outputFile);
     }
     return true;
-  }
-
-  Uint8List stringToUint8List(String data) {
-    // Convert string to bytes (List<int>)
-    List<int> encoded = utf8.encode(data);
-
-    // Convert List<int> to Uint8List
-    Uint8List uint8List = Uint8List.fromList(encoded);
-
-    return uint8List;
   }
 
   Future<bool> restore() async {
@@ -83,9 +78,11 @@ class SetupStorageModel extends ChangeNotifier {
       String filePath = result.files.single.path!;
       var setupsFromFile = await SetupFileUtil.readSetups(filePath);
       if (setupsFromFile != null) {
-        setupMap.addAll(setupsFromFile);
+        _setupMap
+          ..clear()
+          ..addAll(setupsFromFile);
         await SetupFileUtil.writeSetups(
-            setupMap, await SetupFileUtil.defaultLocalFilePath);
+            _setupMap, await SetupFileUtil.defaultLocalFilePath);
         notifyListeners();
       }
       return true;

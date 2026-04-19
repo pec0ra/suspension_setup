@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
+import 'error_screen.dart';
 import 'models/setup.dart';
 import 'setup_detail.dart';
 import 'setup_edit.dart';
@@ -66,6 +67,12 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Consumer<SetupStorageModel>(
         builder: (context, setupModel, child) {
+          if (setupModel.loadError != null) {
+            return ErrorScreenWidget(
+              title: 'Error',
+              message: setupModel.loadError!,
+            );
+          }
           var setupList = setupModel.getSetupList();
           return ListView(
             padding: const EdgeInsets.all(8),
@@ -134,8 +141,9 @@ class _HomePageState extends State<HomePage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              setupModel.deleteSetup(setup);
+            onPressed: () async {
+              await setupModel.deleteSetup(setup);
+              if (!context.mounted) return;
               Navigator.pop(context, 'OK');
             },
             child: const Text('OK'),
@@ -145,23 +153,45 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _backup(BuildContext context) async {
-    await Provider.of<SetupStorageModel>(context, listen: false)
-        .backup()
-        .then((value) => {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Backup saved successfully')),
-              )
-            });
+  Future<void> _backup(BuildContext context) async {
+    final success = await Provider.of<SetupStorageModel>(context, listen: false)
+        .backup();
+    if (!context.mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup saved successfully')),
+      );
+    }
   }
 
-  void _restore(BuildContext context) async {
-    await Provider.of<SetupStorageModel>(context, listen: false)
-        .restore()
-        .then((value) => {
+  Future<void> _restore(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Restore backup?'),
+        content: const Text(
+            'This will replace all your current setups with the backup. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('RESTORE'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+    final success = await Provider.of<SetupStorageModel>(context, listen: false)
+        .restore();
+    if (!context.mounted) return;
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Setups restored successfully')),
-      )
-    });
+      );
+    }
   }
 }
