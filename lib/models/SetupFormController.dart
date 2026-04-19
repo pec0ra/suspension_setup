@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 
 import 'setup.dart';
@@ -22,21 +23,51 @@ class SetupFormController {
 
 class SettingsFormController {
   SettingsFormController(Settings? settings)
-      : airPressure = TextEditingController(text: settings?.airPressure.toString()),
-        volumeSpacer = TextEditingController(text: settings?.volumeSpacer?.toString() ?? ''),
-        sag = TextEditingController(text: settings?.sag.toString()),
-        lsr = TextEditingController(text: settings?.lsr.toString()),
-        hsr = TextEditingController(text: settings?.hsr?.toString() ?? ''),
-        lsc = TextEditingController(text: settings?.lsc.toString()),
-        hsc = TextEditingController(text: settings?.hsc?.toString() ?? '');
+      : airPressure = FieldFormController(
+          enabled: settings?.airPressure != null,
+          value: settings?.airPressure?.value,
+          unit: settings?.airPressure?.unit ??
+              Settings.defaultUnits[SettingType.airPressure]!,
+        ),
+        sag = FieldFormController(
+          enabled: settings?.sag != null,
+          value: settings?.sag?.value,
+          unit: settings?.sag?.unit ?? Settings.defaultUnits[SettingType.sag]!,
+        ),
+        volumeSpacer = FieldFormController(
+          enabled: settings?.volumeSpacer != null,
+          value: settings?.volumeSpacer?.value,
+          unit: settings?.volumeSpacer?.unit ??
+              Settings.defaultUnits[SettingType.volumeSpacer]!,
+        ),
+        lsc = FieldFormController(
+          enabled: settings?.lsc != null,
+          value: settings?.lsc?.value,
+          unit: settings?.lsc?.unit ?? Settings.defaultUnits[SettingType.lsc]!,
+        ),
+        hsc = FieldFormController(
+          enabled: settings?.hsc != null,
+          value: settings?.hsc?.value,
+          unit: settings?.hsc?.unit ?? Settings.defaultUnits[SettingType.hsc]!,
+        ),
+        lsr = FieldFormController(
+          enabled: settings?.lsr != null,
+          value: settings?.lsr?.value,
+          unit: settings?.lsr?.unit ?? Settings.defaultUnits[SettingType.lsr]!,
+        ),
+        hsr = FieldFormController(
+          enabled: settings?.hsr != null,
+          value: settings?.hsr?.value,
+          unit: settings?.hsr?.unit ?? Settings.defaultUnits[SettingType.hsr]!,
+        );
 
-  final TextEditingController airPressure;
-  final TextEditingController volumeSpacer;
-  final TextEditingController sag;
-  final TextEditingController lsr;
-  final TextEditingController hsr;
-  final TextEditingController lsc;
-  final TextEditingController hsc;
+  final FieldFormController airPressure;
+  final FieldFormController volumeSpacer;
+  final FieldFormController sag;
+  final FieldFormController lsr;
+  final FieldFormController hsr;
+  final FieldFormController lsc;
+  final FieldFormController hsc;
 
   void dispose() {
     airPressure.dispose();
@@ -46,5 +77,22 @@ class SettingsFormController {
     hsr.dispose();
     lsc.dispose();
     hsc.dispose();
+  }
+}
+
+class FieldFormController {
+  FieldFormController({required bool enabled, int? value, required String unit})
+      : enabled = ValueNotifier(enabled),
+        value = TextEditingController(text: value?.toString() ?? ''),
+        unit = TextEditingController(text: unit);
+
+  final ValueNotifier<bool> enabled;
+  final TextEditingController value;
+  final TextEditingController unit;
+
+  void dispose() {
+    enabled.dispose();
+    value.dispose();
+    unit.dispose();
   }
 }

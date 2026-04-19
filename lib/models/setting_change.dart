@@ -42,12 +42,16 @@ class SettingChange {
   final SettingType settingType;
   final int? oldValue;
   final int? newValue;
+  final bool? oldEnabled;
+  final bool? newEnabled;
 
   SettingChange({
     required this.suspensionType,
     required this.settingType,
     required this.oldValue,
     required this.newValue,
+    this.oldEnabled,
+    this.newEnabled,
   });
 
   factory SettingChange.fromJson(Map<String, dynamic> json) {
@@ -56,6 +60,8 @@ class SettingChange {
       settingType: SettingType.fromJson(json['settingType']),
       oldValue: json['oldValue'],
       newValue: json['newValue'],
+      oldEnabled: json['oldEnabled'],
+      newEnabled: json['newEnabled'],
     );
   }
 
@@ -65,6 +71,8 @@ class SettingChange {
       'settingType': settingType.toJson(),
       'oldValue': oldValue,
       'newValue': newValue,
+      'oldEnabled': oldEnabled,
+      'newEnabled': newEnabled,
     };
   }
 
@@ -74,6 +82,8 @@ class SettingChange {
       settingType: settingType,
       oldValue: oldValue,
       newValue: newValue,
+      oldEnabled: oldEnabled,
+      newEnabled: newEnabled,
     );
   }
 }
@@ -90,6 +100,16 @@ enum SettingType {
   static SettingType fromJson(String json) => values.byName(json);
 
   String toJson() => name;
+
+  String get label => switch (this) {
+        SettingType.airPressure => 'Air Pressure',
+        SettingType.sag => 'Sag',
+        SettingType.volumeSpacer => 'Volume',
+        SettingType.lsc => 'Low Speed Compression',
+        SettingType.hsc => 'High Speed Compression',
+        SettingType.lsr => 'Low Speed Rebound',
+        SettingType.hsr => 'High Speed Rebound',
+      };
 }
 
 enum SuspensionType {

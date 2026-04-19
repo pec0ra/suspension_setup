@@ -53,7 +53,7 @@ class SetupStorageModel extends ChangeNotifier {
   Future<bool> backup() async {
     String date = DateFormat("yyyy-MM-dd").format(DateTime.now());
     var fileName = "suspension-setup-$date.json";
-    Uint8List fileContent = utf8.encode(jsonEncode(_setupMap));
+    Uint8List fileContent = utf8.encode(SetupFileUtil.encodeSetups(_setupMap));
     String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select a backup file:',
       fileName: fileName,

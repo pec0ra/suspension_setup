@@ -1,38 +1,48 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
 
+Settings _makeSettings({bool allEnabled = true}) {
+  if (allEnabled) {
+    return Settings(
+      airPressure: const Field(value: 120, unit: 'PSI'),
+      sag: const Field(value: 30, unit: '%'),
+      volumeSpacer: const Field(value: 3, unit: 'Spacers'),
+      lsc: const Field(value: 10, unit: 'Clicks'),
+      hsc: const Field(value: 5, unit: 'Clicks'),
+      lsr: const Field(value: 8, unit: 'Clicks'),
+      hsr: const Field(value: 4, unit: 'Clicks'),
+    );
+  }
+  return Settings(
+    airPressure: const Field(value: 100, unit: 'PSI'),
+    sag: const Field(value: 25, unit: '%'),
+    lsc: const Field(value: 6, unit: 'Clicks'),
+    lsr: const Field(value: 4, unit: 'Clicks'),
+  );
+}
+
 void main() {
   group('Settings', () {
-    test('roundtrips through JSON with all fields', () {
-      final settings = Settings(
-        airPressure: 120,
-        sag: 30,
-        volumeSpacer: 3,
-        lsc: 10,
-        hsc: 5,
-        lsr: 8,
-        hsr: 4,
-      );
+    test('roundtrips through JSON with all fields enabled', () {
+      final settings = _makeSettings(allEnabled: true);
       final restored = Settings.fromJson(settings.toJson());
-      expect(restored.airPressure, 120);
-      expect(restored.sag, 30);
-      expect(restored.volumeSpacer, 3);
-      expect(restored.lsc, 10);
-      expect(restored.hsc, 5);
-      expect(restored.lsr, 8);
-      expect(restored.hsr, 4);
+      expect(restored.airPressure?.value, 120);
+      expect(restored.airPressure?.unit, 'PSI');
+      expect(restored.sag?.value, 30);
+      expect(restored.volumeSpacer?.value, 3);
+      expect(restored.lsc?.value, 10);
+      expect(restored.hsc?.value, 5);
+      expect(restored.lsr?.value, 8);
+      expect(restored.hsr?.value, 4);
     });
 
-    test('roundtrips through JSON with nullable fields absent', () {
-      final settings = Settings(
-        airPressure: 100,
-        sag: 25,
-        lsc: 6,
-        lsr: 4,
-      );
+    test('roundtrips through JSON with optional fields disabled (null)', () {
+      final settings = _makeSettings(allEnabled: false);
       final restored = Settings.fromJson(settings.toJson());
+      expect(restored.airPressure?.value, 100);
       expect(restored.volumeSpacer, isNull);
       expect(restored.hsc, isNull);
       expect(restored.hsr, isNull);
@@ -40,10 +50,16 @@ void main() {
 
     test('clone produces equal but independent copy', () {
       final original = Settings(
-          airPressure: 80, sag: 20, lsc: 4, lsr: 3, hsc: 2, hsr: 1);
+        airPressure: const Field(value: 80, unit: 'PSI'),
+        sag: const Field(value: 20, unit: '%'),
+        lsc: const Field(value: 4, unit: 'Clicks'),
+        lsr: const Field(value: 3, unit: 'Clicks'),
+        hsc: const Field(value: 2, unit: 'Clicks'),
+        hsr: const Field(value: 1, unit: 'Clicks'),
+      );
       final clone = original.clone();
-      clone.airPressure = 999;
-      expect(original.airPressure, 80);
+      clone.airPressure = const Field(value: 999, unit: 'PSI');
+      expect(original.airPressure?.value, 80);
     });
   });
 
@@ -72,6 +88,21 @@ void main() {
       final restored = SettingChange.fromJson(change.toJson());
       expect(restored.oldValue, isNull);
       expect(restored.newValue, isNull);
+    });
+
+    test('roundtrips with enabled/disabled toggle', () {
+      final change = SettingChange(
+        suspensionType: SuspensionType.fork,
+        settingType: SettingType.hsc,
+        oldValue: null,
+        newValue: 5,
+        oldEnabled: false,
+        newEnabled: true,
+      );
+      final restored = SettingChange.fromJson(change.toJson());
+      expect(restored.oldEnabled, false);
+      expect(restored.newEnabled, true);
+      expect(restored.newValue, 5);
     });
   });
 
@@ -113,8 +144,19 @@ void main() {
       final original = Setup(
         id: 'test-id-123',
         name: 'Enduro race',
-        fork: Settings(airPressure: 110, sag: 25, lsc: 8, lsr: 6, hsc: 3),
-        shock: Settings(airPressure: 200, sag: 30, lsc: 5, lsr: 4),
+        fork: Settings(
+          airPressure: const Field(value: 110, unit: 'PSI'),
+          sag: const Field(value: 25, unit: '%'),
+          lsc: const Field(value: 8, unit: 'Clicks'),
+          lsr: const Field(value: 6, unit: 'Clicks'),
+          hsc: const Field(value: 3, unit: 'Clicks'),
+        ),
+        shock: Settings(
+          airPressure: const Field(value: 200, unit: 'PSI'),
+          sag: const Field(value: 30, unit: '%'),
+          lsc: const Field(value: 5, unit: 'Clicks'),
+          lsr: const Field(value: 4, unit: 'Clicks'),
+        ),
         history: [
           SettingChanges(
             changes: [],
@@ -126,8 +168,10 @@ void main() {
       final restored = Setup.fromJson(original.toJson());
       expect(restored.id, 'test-id-123');
       expect(restored.name, 'Enduro race');
-      expect(restored.fork.airPressure, 110);
-      expect(restored.shock.sag, 30);
+      expect(restored.fork.airPressure?.value, 110);
+      expect(restored.fork.hsc?.value, 3);
+      expect(restored.fork.hsr, isNull);
+      expect(restored.shock.sag?.value, 30);
       expect(restored.history, hasLength(1));
       expect(restored.history.first.comment, SettingChanges.defaultComment);
     });
@@ -136,8 +180,18 @@ void main() {
       final original = Setup(
         id: 'original-id',
         name: 'Base setup',
-        fork: Settings(airPressure: 100, sag: 20, lsc: 5, lsr: 4),
-        shock: Settings(airPressure: 150, sag: 25, lsc: 3, lsr: 2),
+        fork: Settings(
+          airPressure: const Field(value: 100, unit: 'PSI'),
+          sag: const Field(value: 20, unit: '%'),
+          lsc: const Field(value: 5, unit: 'Clicks'),
+          lsr: const Field(value: 4, unit: 'Clicks'),
+        ),
+        shock: Settings(
+          airPressure: const Field(value: 150, unit: 'PSI'),
+          sag: const Field(value: 25, unit: '%'),
+          lsc: const Field(value: 3, unit: 'Clicks'),
+          lsr: const Field(value: 2, unit: 'Clicks'),
+        ),
         history: [
           SettingChanges(changes: [], date: DateTime.now(), comment: 'initial'),
         ],
@@ -152,8 +206,18 @@ void main() {
       final original = Setup(
         id: 'original-id',
         name: 'Base setup',
-        fork: Settings(airPressure: 100, sag: 20, lsc: 5, lsr: 4),
-        shock: Settings(airPressure: 150, sag: 25, lsc: 3, lsr: 2),
+        fork: Settings(
+          airPressure: const Field(value: 100, unit: 'PSI'),
+          sag: const Field(value: 20, unit: '%'),
+          lsc: const Field(value: 5, unit: 'Clicks'),
+          lsr: const Field(value: 4, unit: 'Clicks'),
+        ),
+        shock: Settings(
+          airPressure: const Field(value: 150, unit: 'PSI'),
+          sag: const Field(value: 25, unit: '%'),
+          lsc: const Field(value: 3, unit: 'Clicks'),
+          lsr: const Field(value: 2, unit: 'Clicks'),
+        ),
         history: [
           SettingChanges(changes: [], date: DateTime.now()),
         ],

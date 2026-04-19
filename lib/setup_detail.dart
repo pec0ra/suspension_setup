@@ -83,6 +83,22 @@ class History extends StatelessWidget {
 
   final Setup setup;
 
+  String _changeText(SettingChange change, Setup setup) {
+    final settings = change.suspensionType == SuspensionType.fork
+        ? setup.fork
+        : setup.shock;
+    final unit = settings.fieldFor(change.settingType)?.unit ?? '';
+    final label = change.settingType.label;
+
+    if (change.newEnabled == true) {
+      return '$label: enabled (${change.newValue} $unit)'.trim();
+    }
+    if (change.newEnabled == false) {
+      return '$label: disabled (was ${change.oldValue} $unit)'.trim();
+    }
+    return '$label: ${change.oldValue} → ${change.newValue} $unit'.trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -142,8 +158,7 @@ class History extends StatelessWidget {
                       top: 8,
                     ),
                     child: TextWithIcon(
-                      text:
-                          "${change.settingType.name} from ${change.oldValue} to ${change.newValue}",
+                      text: _changeText(change, setup),
                       icon: switch (change.suspensionType) {
                         SuspensionType.fork => SuspensionIcons.fork,
                         SuspensionType.shock => SuspensionIcons.shock,

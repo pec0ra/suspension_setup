@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'models/SetupFormController.dart';
+import 'models/field.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
 import 'models/setup.dart';
@@ -122,38 +123,57 @@ class _SetupEditState extends State<SetupEdit> {
   void _updateValues(
     SuspensionType suspensionType,
     SettingsFormController controller,
-    Settings? settings,
+    Settings? oldSettings,
     SettingChanges settingChanges,
     Settings newSettings,
   ) {
-    void apply(SettingType type, int? oldVal, int? newVal,
-        void Function(int?) setter) {
-      if (oldVal == newVal) return;
-      if (settings != null) {
-        settingChanges.changes.add(SettingChange(
-          settingType: type,
-          oldValue: oldVal,
-          newValue: newVal,
-          suspensionType: suspensionType,
-        ));
+    final isEditing = oldSettings != null;
+
+    void applyField(
+      SettingType type,
+      Field? oldField,
+      FieldFormController ctrl,
+      void Function(Field?) setter,
+    ) {
+      final newField = ctrl.enabled.value
+          ? Field(value: int.parse(ctrl.value.text), unit: ctrl.unit.text)
+          : null;
+
+      if (isEditing) {
+        final wasEnabled = oldField != null;
+        final isEnabled = ctrl.enabled.value;
+        final enabledChanged = wasEnabled != isEnabled;
+        final valueChanged = oldField?.value != newField?.value;
+
+        if (enabledChanged || valueChanged) {
+          settingChanges.changes.add(SettingChange(
+            settingType: type,
+            suspensionType: suspensionType,
+            oldValue: oldField?.value,
+            newValue: newField?.value,
+            oldEnabled: enabledChanged ? wasEnabled : null,
+            newEnabled: enabledChanged ? isEnabled : null,
+          ));
+        }
       }
-      setter(newVal);
+
+      setter(newField);
     }
 
-    apply(SettingType.airPressure, settings?.airPressure,
-        int.parse(controller.airPressure.text), (v) => newSettings.airPressure = v!);
-    apply(SettingType.sag, settings?.sag,
-        int.parse(controller.sag.text), (v) => newSettings.sag = v!);
-    apply(SettingType.volumeSpacer, settings?.volumeSpacer,
-        int.tryParse(controller.volumeSpacer.text), (v) => newSettings.volumeSpacer = v);
-    apply(SettingType.lsc, settings?.lsc,
-        int.parse(controller.lsc.text), (v) => newSettings.lsc = v!);
-    apply(SettingType.hsc, settings?.hsc,
-        int.tryParse(controller.hsc.text), (v) => newSettings.hsc = v);
-    apply(SettingType.lsr, settings?.lsr,
-        int.parse(controller.lsr.text), (v) => newSettings.lsr = v!);
-    apply(SettingType.hsr, settings?.hsr,
-        int.tryParse(controller.hsr.text), (v) => newSettings.hsr = v);
+    applyField(SettingType.airPressure, oldSettings?.airPressure,
+        controller.airPressure, (f) => newSettings.airPressure = f);
+    applyField(SettingType.sag, oldSettings?.sag,
+        controller.sag, (f) => newSettings.sag = f);
+    applyField(SettingType.volumeSpacer, oldSettings?.volumeSpacer,
+        controller.volumeSpacer, (f) => newSettings.volumeSpacer = f);
+    applyField(SettingType.lsc, oldSettings?.lsc,
+        controller.lsc, (f) => newSettings.lsc = f);
+    applyField(SettingType.hsc, oldSettings?.hsc,
+        controller.hsc, (f) => newSettings.hsc = f);
+    applyField(SettingType.lsr, oldSettings?.lsr,
+        controller.lsr, (f) => newSettings.lsr = f);
+    applyField(SettingType.hsr, oldSettings?.hsr,
+        controller.hsr, (f) => newSettings.hsr = f);
   }
 
   @override
@@ -205,7 +225,7 @@ class _SetupEditState extends State<SetupEdit> {
         onPressed: () => _onSetupChanged(context),
         tooltip: 'Save setup',
         child: const Icon(Icons.save),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }
