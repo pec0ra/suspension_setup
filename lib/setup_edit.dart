@@ -221,7 +221,7 @@ class _SetupEditState extends State<SetupEdit> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         title: Text(widget.setup?.name ?? ''),
       ),
       body: SingleChildScrollView(

@@ -37,7 +37,7 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         title: Text(widget.title),
         actions: [
           PopupMenuButton(
@@ -61,7 +61,7 @@ class _HomePageState extends State<HomePage> {
         ],
         leading: Padding(
           padding: const EdgeInsets.fromLTRB(14, 7, 0, 7),
-          child: SvgPicture.asset("assets/icon/icon-white.svg", color: theme.colorScheme.onBackground,),
+          child: SvgPicture.asset("assets/icon/icon-white.svg", color: theme.colorScheme.onSurface,),
         ),
       ),
       body: Consumer<SetupStorageModel>(

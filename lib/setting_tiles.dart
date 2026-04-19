@@ -90,9 +90,9 @@ class SettingTiles extends StatelessWidget {
 }
 
 class SettingTile extends StatelessWidget {
-  SettingTile({
+  const SettingTile({
     super.key,
-    required SettingType this.settingType,
+    required this.settingType,
     required this.name,
     this.value,
     this.unit,

@@ -1,7 +1,4 @@
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:suspension_setup/error_screen.dart';
@@ -35,7 +32,7 @@ class SetupDetail extends StatelessWidget {
       } else {
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: theme.colorScheme.background,
+            backgroundColor: theme.colorScheme.surface,
             title: Text(setup.name),
             actions: [
               IconButton(
