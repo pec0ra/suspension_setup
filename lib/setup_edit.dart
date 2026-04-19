@@ -221,7 +221,8 @@ class _SetupEditState extends State<SetupEdit> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: theme.colorScheme.secondary,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
         onPressed: () => _onSetupChanged(context),
         tooltip: 'Save setup',
         child: const Icon(Icons.save),

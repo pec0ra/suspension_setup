@@ -115,6 +115,8 @@ class _HomePageState extends State<HomePage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
         onPressed: createSetup,
         tooltip: 'Add setup',
         child: const Icon(Icons.add),
