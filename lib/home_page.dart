@@ -167,6 +167,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _restore(BuildContext context) async {
+    final model = Provider.of<SetupStorageModel>(context, listen: false);
+    final filePath = await model.pickBackupFile();
+    if (filePath == null) return;
+    if (!context.mounted) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -187,13 +192,11 @@ class _HomePageState extends State<HomePage> {
     );
     if (confirmed != true) return;
     if (!context.mounted) return;
-    final success = await Provider.of<SetupStorageModel>(context, listen: false)
-        .restore();
+
+    await model.restoreFromFile(filePath);
     if (!context.mounted) return;
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Setups restored successfully')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Setups restored successfully')),
+    );
   }
 }

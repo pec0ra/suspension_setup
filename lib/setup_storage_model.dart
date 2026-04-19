@@ -54,7 +54,7 @@ class SetupStorageModel extends ChangeNotifier {
     String date = DateFormat("yyyy-MM-dd").format(DateTime.now());
     var fileName = "suspension-setup-$date.json";
     Uint8List fileContent = utf8.encode(SetupFileUtil.encodeSetups(_setupMap));
-    String? outputFile = await FilePicker.platform.saveFile(
+    String? outputFile = await FilePicker.saveFile(
       dialogTitle: 'Please select a backup file:',
       fileName: fileName,
       bytes: fileContent
@@ -70,24 +70,20 @@ class SetupStorageModel extends ChangeNotifier {
     return true;
   }
 
-  Future<bool> restore() async {
-    FilePickerResult? result = await FilePicker.platform
-        .pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+  Future<String?> pickBackupFile() async {
+    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+    return result?.files.single.path;
+  }
 
-    if (result != null) {
-      String filePath = result.files.single.path!;
-      var setupsFromFile = await SetupFileUtil.readSetups(filePath);
-      if (setupsFromFile != null) {
-        _setupMap
-          ..clear()
-          ..addAll(setupsFromFile);
-        await SetupFileUtil.writeSetups(
-            _setupMap, await SetupFileUtil.defaultLocalFilePath);
-        notifyListeners();
-      }
-      return true;
-    } else {
-      return false;
+  Future<void> restoreFromFile(String filePath) async {
+    final setupsFromFile = await SetupFileUtil.readSetups(filePath);
+    if (setupsFromFile != null) {
+      _setupMap
+        ..clear()
+        ..addAll(setupsFromFile);
+      await SetupFileUtil.writeSetups(
+          _setupMap, await SetupFileUtil.defaultLocalFilePath);
+      notifyListeners();
     }
   }
 }
