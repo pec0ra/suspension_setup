@@ -6,6 +6,8 @@ class Tyres {
 
   Tyres({this.front, this.rear});
 
+  bool get hasAnyField => front != null || rear != null;
+
   factory Tyres.fromJson(Map<String, dynamic>? json) {
     if (json == null) return Tyres();
     Field? parse(String key) {

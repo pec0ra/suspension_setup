@@ -175,6 +175,7 @@ class FieldEditCard extends StatelessWidget {
       valueListenable: controller.enabled,
       builder: (context, enabled, _) {
         return Card(
+          clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

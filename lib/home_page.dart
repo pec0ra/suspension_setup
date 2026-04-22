@@ -89,9 +89,11 @@ class _HomePageState extends State<HomePage> {
                           style: theme.textTheme.headlineMedium,
                         ),
                       ),
-                      ElevatedButton(
-                          onPressed: createSetup,
-                          child: const Text('Add a setup'))
+                      FilledButton.icon(
+                        onPressed: createSetup,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add a setup')
+                      )
                     ],
                   ),
                 ),

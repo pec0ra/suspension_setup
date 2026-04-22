@@ -54,21 +54,31 @@ class SetupDetail extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  const TitleWithIcon(
-                      title: 'Fork', icon: SuspensionIcons.fork),
-                  SettingTiles(
-                    settings: setup.fork,
-                  ),
-                  const TitleWithIcon(
-                      title: 'Shock', icon: SuspensionIcons.shock),
-                  SettingTiles(
-                    settings: setup.shock,
-                  ),
-                  const TitleWithIcon(
-                      title: 'Tyres', icon: SuspensionIcons.tyre),
-                  TyreTiles(
-                    tyres: setup.tyres,
-                  ),
+                  if (!setup.fork.hasAnyField &&
+                      !setup.shock.hasAnyField &&
+                      !setup.tyres.hasAnyField)
+                    _EmptySettings(
+                      onEdit: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => SetupEdit(setup: setup)),
+                      ),
+                    ),
+                  if (setup.fork.hasAnyField) ...[
+                    const TitleWithIcon(
+                        title: 'Fork', icon: SuspensionIcons.fork),
+                    SettingTiles(settings: setup.fork),
+                  ],
+                  if (setup.shock.hasAnyField) ...[
+                    const TitleWithIcon(
+                        title: 'Shock', icon: SuspensionIcons.shock),
+                    SettingTiles(settings: setup.shock),
+                  ],
+                  if (setup.tyres.hasAnyField) ...[
+                    const TitleWithIcon(
+                        title: 'Tyres', icon: SuspensionIcons.tyre),
+                    TyreTiles(tyres: setup.tyres),
+                  ],
                   if (setup.history.isNotEmpty) History(setup: setup),
                 ],
               ),
@@ -77,6 +87,37 @@ class SetupDetail extends StatelessWidget {
         );
       }
     });
+  }
+}
+
+class _EmptySettings extends StatelessWidget {
+  const _EmptySettings({required this.onEdit});
+
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Center(
+        child: Column(
+          children: [
+            Text(
+              'Activate at least one field to see your settings here',
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit setup'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
