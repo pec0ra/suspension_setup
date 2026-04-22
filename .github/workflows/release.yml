@@ -47,7 +47,12 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload APK to release
+      - name: Build release app bundle
+        run: flutter build appbundle --release
+
+      - name: Upload artifacts to release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
