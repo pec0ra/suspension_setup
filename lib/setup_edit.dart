@@ -6,6 +6,7 @@ import 'models/field.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
 import 'models/setup.dart';
+import 'models/tyres.dart';
 import 'setting_tiles.dart';
 import 'setup_storage_model.dart';
 import 'suspension_icons.dart';
@@ -62,6 +63,12 @@ class _SetupEditState extends State<SetupEdit> {
         widget.setup?.shock,
         settingChanges,
         newSetup.shock,
+      );
+      _updateTyreValues(
+        _setupFormController.tyres,
+        widget.setup?.tyres,
+        settingChanges,
+        newSetup.tyres,
       );
 
       if (settingChanges.changes.isNotEmpty) {
@@ -176,6 +183,51 @@ class _SetupEditState extends State<SetupEdit> {
         controller.hsr, (f) => newSettings.hsr = f);
   }
 
+  void _updateTyreValues(
+    TyresFormController controller,
+    Tyres? oldTyres,
+    SettingChanges settingChanges,
+    Tyres newTyres,
+  ) {
+    final isEditing = oldTyres != null;
+
+    void applyField(
+      SettingType type,
+      Field? oldField,
+      FieldFormController ctrl,
+      void Function(Field?) setter,
+    ) {
+      final newField = ctrl.enabled.value
+          ? Field(value: int.parse(ctrl.value.text), unit: ctrl.unit.text)
+          : null;
+
+      if (isEditing) {
+        final wasEnabled = oldField != null;
+        final isEnabled = ctrl.enabled.value;
+        final enabledChanged = wasEnabled != isEnabled;
+        final valueChanged = oldField?.value != newField?.value;
+
+        if (enabledChanged || valueChanged) {
+          settingChanges.changes.add(SettingChange(
+            settingType: type,
+            suspensionType: SuspensionType.tyre,
+            oldValue: oldField?.value,
+            newValue: newField?.value,
+            oldEnabled: enabledChanged ? wasEnabled : null,
+            newEnabled: enabledChanged ? isEnabled : null,
+          ));
+        }
+      }
+
+      setter(newField);
+    }
+
+    applyField(SettingType.frontTyrePressure, oldTyres?.front,
+        controller.front, (f) => newTyres.front = f);
+    applyField(SettingType.rearTyrePressure, oldTyres?.rear,
+        controller.rear, (f) => newTyres.rear = f);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -214,6 +266,12 @@ class _SetupEditState extends State<SetupEdit> {
                 SettingTiles(
                   settings: widget.setup?.shock,
                   settingsFormController: _setupFormController.shock,
+                ),
+                const TitleWithIcon(
+                    title: 'Tyres', icon: SuspensionIcons.tyre),
+                TyreTiles(
+                  tyres: widget.setup?.tyres,
+                  tyresFormController: _setupFormController.tyres,
                 ),
               ],
             ),

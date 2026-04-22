@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
+import 'package:suspension_setup/models/tyres.dart';
 
 import 'setup.dart';
 
@@ -8,16 +9,43 @@ class SetupFormController {
   SetupFormController(Setup? setup)
       : name = TextEditingController(text: setup?.name),
         fork = SettingsFormController(setup?.fork),
-        shock = SettingsFormController(setup?.shock);
+        shock = SettingsFormController(setup?.shock),
+        tyres = TyresFormController(setup?.tyres);
 
   final TextEditingController name;
   final SettingsFormController fork;
   final SettingsFormController shock;
+  final TyresFormController tyres;
 
   void dispose() {
     name.dispose();
     fork.dispose();
     shock.dispose();
+    tyres.dispose();
+  }
+}
+
+class TyresFormController {
+  TyresFormController(Tyres? tyres)
+      : front = FieldFormController(
+          enabled: tyres?.front != null,
+          value: tyres?.front?.value,
+          unit: tyres?.front?.unit ??
+              Settings.defaultUnits[SettingType.frontTyrePressure]!,
+        ),
+        rear = FieldFormController(
+          enabled: tyres?.rear != null,
+          value: tyres?.rear?.value,
+          unit: tyres?.rear?.unit ??
+              Settings.defaultUnits[SettingType.rearTyrePressure]!,
+        );
+
+  final FieldFormController front;
+  final FieldFormController rear;
+
+  void dispose() {
+    front.dispose();
+    rear.dispose();
   }
 }
 

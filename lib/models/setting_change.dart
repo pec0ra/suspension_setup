@@ -95,7 +95,9 @@ enum SettingType {
   lsr,
   hsr,
   lsc,
-  hsc;
+  hsc,
+  frontTyrePressure,
+  rearTyrePressure;
 
   static SettingType fromJson(String json) => values.byName(json);
 
@@ -109,12 +111,15 @@ enum SettingType {
         SettingType.hsc => 'High Speed Compression',
         SettingType.lsr => 'Low Speed Rebound',
         SettingType.hsr => 'High Speed Rebound',
+        SettingType.frontTyrePressure => 'Front Tyre Pressure',
+        SettingType.rearTyrePressure => 'Rear Tyre Pressure',
       };
 }
 
 enum SuspensionType {
   fork,
-  shock;
+  shock,
+  tyre;
 
   static SuspensionType fromJson(String json) => values.byName(json);
 

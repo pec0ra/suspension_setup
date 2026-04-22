@@ -3,6 +3,7 @@ import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
+import 'package:suspension_setup/models/tyres.dart';
 
 Settings _makeSettings({bool allEnabled = true}) {
   if (allEnabled) {
@@ -157,6 +158,10 @@ void main() {
           lsc: const Field(value: 5, unit: 'Clicks'),
           lsr: const Field(value: 4, unit: 'Clicks'),
         ),
+        tyres: Tyres(
+          front: const Field(value: 28, unit: 'PSI'),
+          rear: const Field(value: 26, unit: 'PSI'),
+        ),
         history: [
           SettingChanges(
             changes: [],
@@ -192,6 +197,7 @@ void main() {
           lsc: const Field(value: 3, unit: 'Clicks'),
           lsr: const Field(value: 2, unit: 'Clicks'),
         ),
+        tyres: Tyres(),
         history: [
           SettingChanges(changes: [], date: DateTime.now(), comment: 'initial'),
         ],
@@ -200,6 +206,36 @@ void main() {
       expect(clone.id, isNot('original-id'));
       expect(clone.name, 'Base setup');
       expect(clone.history, hasLength(1));
+    });
+
+    test('deserializes legacy JSON without tyres key as empty tyres', () {
+      final json = {
+        'id': 'legacy-id',
+        'name': 'Legacy setup',
+        'fork': {
+          'airPressure': {'value': 100, 'unit': 'PSI'},
+          'sag': {'value': 25, 'unit': '%'},
+          'volumeSpacer': null,
+          'lsc': {'value': 8, 'unit': 'Clicks'},
+          'hsc': null,
+          'lsr': {'value': 6, 'unit': 'Clicks'},
+          'hsr': null,
+        },
+        'shock': {
+          'airPressure': {'value': 180, 'unit': 'PSI'},
+          'sag': {'value': 30, 'unit': '%'},
+          'volumeSpacer': null,
+          'lsc': {'value': 5, 'unit': 'Clicks'},
+          'hsc': null,
+          'lsr': {'value': 4, 'unit': 'Clicks'},
+          'hsr': null,
+        },
+        // no 'tyres' key — simulates a pre-tyre config
+        'history': [],
+      };
+      final setup = Setup.fromJson(json);
+      expect(setup.tyres.front, isNull);
+      expect(setup.tyres.rear, isNull);
     });
 
     test('clone without history produces empty history', () {
@@ -218,6 +254,7 @@ void main() {
           lsc: const Field(value: 3, unit: 'Clicks'),
           lsr: const Field(value: 2, unit: 'Clicks'),
         ),
+        tyres: Tyres(),
         history: [
           SettingChanges(changes: [], date: DateTime.now()),
         ],

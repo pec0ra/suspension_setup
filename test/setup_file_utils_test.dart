@@ -6,6 +6,7 @@ import 'package:suspension_setup/migrations/migrator.dart';
 import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
+import 'package:suspension_setup/models/tyres.dart';
 import 'package:suspension_setup/setup_file_utils.dart';
 
 Setup _makeSetup(String id, String name) {
@@ -24,6 +25,7 @@ Setup _makeSetup(String id, String name) {
       lsc: const Field(value: 5, unit: 'Clicks'),
       lsr: const Field(value: 4, unit: 'Clicks'),
     ),
+    tyres: Tyres(),
     history: [],
   );
 }

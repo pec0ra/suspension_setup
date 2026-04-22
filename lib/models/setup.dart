@@ -1,4 +1,5 @@
 import 'package:suspension_setup/models/settings.dart';
+import 'package:suspension_setup/models/tyres.dart';
 import 'package:uuid/uuid.dart';
 
 import 'setting_change.dart';
@@ -8,6 +9,7 @@ class Setup {
   String name;
   final Settings fork;
   final Settings shock;
+  final Tyres tyres;
   final List<SettingChanges> history;
 
   Setup({
@@ -15,6 +17,7 @@ class Setup {
     required this.name,
     required this.fork,
     required this.shock,
+    required this.tyres,
     required this.history,
   });
 
@@ -24,6 +27,7 @@ class Setup {
       name: json['name'],
       fork: Settings.fromJson(json['fork']),
       shock: Settings.fromJson(json['shock']),
+      tyres: Tyres.fromJson(json['tyres'] as Map<String, dynamic>?),
       history: List<SettingChanges>.from(
           json['history'].map((e) => SettingChanges.fromJson(e))),
     );
@@ -35,6 +39,7 @@ class Setup {
       'name': name,
       'fork': fork.toJson(),
       'shock': shock.toJson(),
+      'tyres': tyres.toJson(),
       'history': history.map((e) => e.toJson()).toList()
     };
   }
@@ -45,6 +50,7 @@ class Setup {
       name: '',
       fork: Settings.getDefault(),
       shock: Settings.getDefault(),
+      tyres: Tyres(),
       history: [],
     );
   }
@@ -55,6 +61,7 @@ class Setup {
       name: name,
       fork: fork.clone(),
       shock: shock.clone(),
+      tyres: tyres.clone(),
       history: includeHistory ? history.map((e) => e.clone()).toList() : [],
     );
   }

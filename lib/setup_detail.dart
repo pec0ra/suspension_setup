@@ -64,6 +64,11 @@ class SetupDetail extends StatelessWidget {
                   SettingTiles(
                     settings: setup.shock,
                   ),
+                  const TitleWithIcon(
+                      title: 'Tyres', icon: SuspensionIcons.tyre),
+                  TyreTiles(
+                    tyres: setup.tyres,
+                  ),
                   if (setup.history.isNotEmpty) History(setup: setup),
                 ],
               ),
@@ -84,10 +89,18 @@ class History extends StatelessWidget {
   final Setup setup;
 
   String _changeText(SettingChange change, Setup setup) {
-    final settings = change.suspensionType == SuspensionType.fork
-        ? setup.fork
-        : setup.shock;
-    final unit = settings.fieldFor(change.settingType)?.unit ?? '';
+    final String unit;
+    if (change.suspensionType == SuspensionType.tyre) {
+      unit = (change.settingType == SettingType.frontTyrePressure
+              ? setup.tyres.front?.unit
+              : setup.tyres.rear?.unit) ??
+          '';
+    } else {
+      final settings = change.suspensionType == SuspensionType.fork
+          ? setup.fork
+          : setup.shock;
+      unit = settings.fieldFor(change.settingType)?.unit ?? '';
+    }
     final label = change.settingType.label;
 
     if (change.newEnabled == true) {
@@ -162,6 +175,7 @@ class History extends StatelessWidget {
                       icon: switch (change.suspensionType) {
                         SuspensionType.fork => SuspensionIcons.fork,
                         SuspensionType.shock => SuspensionIcons.shock,
+                        SuspensionType.tyre => SuspensionIcons.tyre,
                       },
                     ),
                   ),

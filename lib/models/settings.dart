@@ -59,6 +59,8 @@ class Settings {
     SettingType.hsc: 'Clicks',
     SettingType.lsr: 'Clicks',
     SettingType.hsr: 'Clicks',
+    SettingType.frontTyrePressure: 'PSI',
+    SettingType.rearTyrePressure: 'PSI',
   };
 
   factory Settings.getDefault() {
@@ -81,6 +83,7 @@ class Settings {
         SettingType.hsc => hsc,
         SettingType.lsr => lsr,
         SettingType.hsr => hsr,
+        SettingType.frontTyrePressure || SettingType.rearTyrePressure => null,
       };
 
   Settings clone() {

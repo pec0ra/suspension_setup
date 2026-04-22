@@ -5,6 +5,7 @@ import 'models/SetupFormController.dart';
 import 'models/field.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
+import 'models/tyres.dart';
 
 class SettingTiles extends StatelessWidget {
   const SettingTiles({
@@ -70,6 +71,55 @@ class SettingTiles extends StatelessWidget {
           (name: SettingType.lsr.label, field: s.lsr),
           (name: SettingType.hsr.label, field: s.hsr),
         ]),
+      ],
+    );
+  }
+}
+
+class TyreTiles extends StatelessWidget {
+  const TyreTiles({
+    super.key,
+    this.tyres,
+    this.tyresFormController,
+  });
+
+  final Tyres? tyres;
+  final TyresFormController? tyresFormController;
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = tyresFormController;
+    if (ctrl != null) {
+      return _buildEditMode(ctrl);
+    }
+    final t = tyres;
+    if (t != null) {
+      return _buildViewMode(t);
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildEditMode(TyresFormController ctrl) {
+    return Column(
+      children: [
+        FieldEditCard(
+            name: SettingType.frontTyrePressure.label, controller: ctrl.front),
+        FieldEditCard(
+            name: SettingType.rearTyrePressure.label, controller: ctrl.rear),
+      ],
+    );
+  }
+
+  Widget _buildViewMode(Tyres t) {
+    final enabled = [
+      (name: SettingType.frontTyrePressure.label, field: t.front),
+      (name: SettingType.rearTyrePressure.label, field: t.rear),
+    ].where((e) => e.field != null).toList();
+    if (enabled.isEmpty) return const SizedBox.shrink();
+    return Row(
+      children: [
+        for (final e in enabled)
+          SettingTile(name: e.name, value: e.field!.value, unit: e.field!.unit),
       ],
     );
   }
