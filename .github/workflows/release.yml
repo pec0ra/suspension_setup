@@ -44,8 +44,8 @@ jobs:
           echo "keyAlias=$KEY_ALIAS" >> android/key.properties
           echo "storeFile=keystore.jks" >> android/key.properties
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build release APKs
+        run: flutter build apk --release --split-per-abi
 
       - name: Build release app bundle
         run: flutter build appbundle --release
@@ -54,5 +54,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-*-release.apk
             build/app/outputs/bundle/release/app-release.aab
