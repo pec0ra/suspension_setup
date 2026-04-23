@@ -1,0 +1,11 @@
+Suspension Setup helps mountain bike riders keep track of their suspension settings and monitor changes over time.
+
+Features:
+* Manage multiple suspension setups
+* Track fork settings: air pressure, sag, volume spacers, low-speed compression (LSC), high-speed compression (HSC), low-speed rebound (LSR), high-speed rebound (HSR)
+* Track shock settings with the same parameters
+* Track front and rear tyre pressures
+* Enable or disable individual fields per setup to match your specific components
+* Full change history: every time you save updated settings, the changes are logged with a timestamp
+* Add comments to history entries to note what prompted each change
+* No cloud, no account required, no data sent anywhere — everything stays on your device

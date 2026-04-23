@@ -1,0 +1,11 @@
+Suspension Setup aide les riders VTT à conserver leurs réglages de suspension et à suivre les modifications au fil du temps.
+
+Fonctionnalités :
+* Gérez plusieurs configurations de suspension
+* Suivez les réglages de la fourche : pression d'air, sag, volume, compression basse vitesse (LSC), compression haute vitesse (HSC), rebond basse vitesse (LSR), rebond haute vitesse (HSR)
+* Suivez les mêmes paramètres pour l'amortisseur arrière
+* Suivez les pressions des pneus avant et arrière
+* Activez ou désactivez les champs individuellement selon vos composants
+* Historique complet des modifications : chaque sauvegarde est enregistrée avec une date et une heure
+* Ajoutez des commentaires aux entrées de l'historique pour noter ce qui a motivé chaque changement
+* Pas de cloud, aucun compte requis, aucune donnée envoyée — tout reste sur votre appareil

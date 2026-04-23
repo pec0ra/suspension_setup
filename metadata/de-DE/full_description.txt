@@ -1,0 +1,11 @@
+Suspension Setup hilft Mountainbikern dabei, ihre Federungseinstellungen zu speichern und Änderungen im Laufe der Zeit zu verfolgen.
+
+Funktionen:
+* Mehrere Federungs-Setups verwalten
+* Gabeleinstellungen verfolgen: Luftdruck, Sag, Volumenspacer, Low-Speed-Compression (LSC), High-Speed-Compression (HSC), Low-Speed-Rebound (LSR), High-Speed-Rebound (HSR)
+* Dieselben Parameter für den Hinterbau-Dämpfer verfolgen
+* Reifendruck für Vorder- und Hinterreifen verfolgen
+* Einzelne Felder je nach Federungskomponenten aktivieren oder deaktivieren
+* Vollständige Änderungshistorie: Jedes Mal, wenn aktualisierte Einstellungen gespeichert werden, werden die Änderungen mit Zeitstempel protokolliert
+* Kommentare zu Historieneinträgen hinzufügen, um den Grund jeder Änderung festzuhalten
+* Kein Cloud, kein Konto erforderlich, keine Daten werden übermittelt — alles bleibt auf dem Gerät
