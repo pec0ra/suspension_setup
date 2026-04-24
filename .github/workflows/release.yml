@@ -10,8 +10,20 @@ jobs:
     permissions:
       contents: write
 
+    defaults:
+      run:
+        working-directory: /home/vagrant/build/ch.pec0ra.suspension_setup
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Move checkout to F-Droid compatible path
+        working-directory: /tmp
+        run: |
+          sudo mkdir -p /home/vagrant/build
+          sudo mv $GITHUB_WORKSPACE /home/vagrant/build/ch.pec0ra.suspension_setup
+          sudo chown -R $(whoami) /home/vagrant/build/ch.pec0ra.suspension_setup
+          ln -s /home/vagrant/build/ch.pec0ra.suspension_setup $GITHUB_WORKSPACE
 
       - uses: actions/setup-java@v4
         with:
