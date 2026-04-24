@@ -12,6 +12,16 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(':app')
 }
+subprojects {
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin('com.android.library') &&
+                project.android.externalNativeBuild.cmake.path != null) {
+            project.android.defaultConfig.externalNativeBuild.cmake {
+                arguments "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--build-id=none"
+            }
+        }
+    }
+}
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
