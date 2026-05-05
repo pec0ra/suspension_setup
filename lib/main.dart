@@ -20,12 +20,11 @@ class SuspensionSetupApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff88a6c3), secondary: const Color(0xffff954f), tertiary: const Color(0xff88a6c3),),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff88a6c3), secondary: const Color(0xffff954f), primaryContainer: const Color(0xffc8d8e8), onPrimaryContainer: const Color(0xff1c2e3c)),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(brightness: Brightness.dark, seedColor: const Color(0xff88a6c3), secondary: const Color(0xffff6600), surface: const Color(0xff111111), tertiary: const Color(
-            0x8088a6c3)),
+        colorScheme: ColorScheme.fromSeed(brightness: Brightness.dark, seedColor: const Color(0xff88a6c3), secondary: const Color(0xffff6600), surface: const Color(0xff111111), primaryContainer: const Color(0xff4c5b6a), onPrimaryContainer: const Color(0xffe8eef4)),
         useMaterial3: true,
       ),
       home: const HomePage(

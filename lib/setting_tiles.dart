@@ -142,14 +142,14 @@ class SettingTile extends StatelessWidget {
     final theme = Theme.of(context);
     return Expanded(
       child: Card(
-        color: theme.colorScheme.tertiary,
+        color: theme.colorScheme.primaryContainer,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           child: Column(
             children: [
-              Text(name, style: theme.primaryTextTheme.bodyMedium),
-              Text(value.toString(), style: theme.primaryTextTheme.headlineSmall),
-              Text(unit, style: theme.primaryTextTheme.bodySmall),
+              Text(name, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+              Text(value.toString(), style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+              Text(unit, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
             ],
           ),
         ),
@@ -193,10 +193,7 @@ class FieldEditCard extends StatelessWidget {
               if (enabled)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Theme(
-                    data: ThemeData(
-                    ),
-                    child: Row(
+                  child: Row(
                       children: [
                         Expanded(
                           child: TextFormField(
@@ -232,7 +229,6 @@ class FieldEditCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
                 ),
             ],
           ),

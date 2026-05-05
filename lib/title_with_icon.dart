@@ -28,7 +28,7 @@ class TitleWithIcon extends StatelessWidget {
             ),
           Text(
             title,
-            style: theme.textTheme.headlineMedium,
+            style: theme.textTheme.titleLarge,
           ),
         ],
       ),

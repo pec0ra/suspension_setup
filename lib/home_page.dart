@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'error_screen.dart';
@@ -38,31 +39,36 @@ class _HomePageState extends State<HomePage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
         title: Text(widget.title),
         actions: [
           PopupMenuButton(
             itemBuilder: (context) => [
               PopupMenuItem(
-                child: const ListTile(
-                  leading: Icon(Icons.save),
-                  title: Text('Backup'),
-                ),
                 onTap: () => _backup(context),
+                child: const Row(
+                  spacing: 12,
+                  children: [
+                    Icon(Icons.save),
+                    Text('Backup'),
+                  ],
+                ),
               ),
               PopupMenuItem(
-                child: const ListTile(
-                  leading: Icon(Icons.file_open),
-                  title: Text('Restore'),
-                ),
                 onTap: () => _restore(context),
+                child: const Row(
+                  spacing: 12,
+                  children: [
+                    Icon(Icons.file_open),
+                    Text('Restore'),
+                  ],
+                ),
               ),
             ],
           )
         ],
         leading: Padding(
           padding: const EdgeInsets.fromLTRB(14, 7, 0, 7),
-          child: SvgPicture.asset("assets/icon/icon-white.svg", color: theme.colorScheme.onSurface,),
+          child: SvgPicture.asset("assets/icon/icon-white.svg", colorFilter: ColorFilter.mode(theme.colorScheme.onSurface, BlendMode.srcIn)),
         ),
       ),
       body: Consumer<SetupStorageModel>(
@@ -74,44 +80,67 @@ class _HomePageState extends State<HomePage> {
             );
           }
           var setupList = setupModel.getSetupList();
+          if (setupList.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    "assets/icon/icon-white.svg",
+                    colorFilter: ColorFilter.mode(
+                      theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                      BlendMode.srcIn,
+                    ),
+                    width: 80,
+                    height: 80,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      'You have no setup yet',
+                      style: theme.textTheme.headlineMedium,
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed: createSetup,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add a setup'),
+                  ),
+                ],
+              ),
+            );
+          }
           return ListView(
             padding: const EdgeInsets.all(8),
-            children: <Widget>[
-              if (setupList.isEmpty)
-                Align(
-                  heightFactor: 4,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 32),
-                        child: Text(
-                          'You have no setup yet',
-                          style: theme.textTheme.headlineMedium,
-                        ),
-                      ),
-                      FilledButton.icon(
-                        onPressed: createSetup,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add a setup')
-                      )
-                    ],
+            children: [
+              for (Setup setup in setupList.reversed)
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    title: Text(setup.name),
+                    subtitle: setup.history.isNotEmpty
+                        ? Row(
+                            spacing: 4,
+                            children: [
+                              Icon(Icons.history, size: 14),
+                              Text(DateFormat.yMMMd().format(setup.history.last.date)),
+                            ],
+                          )
+                        : null,
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => SetupDetail(
+                                  setupId: setup.id,
+                                )),
+                      );
+                    },
+                    // TODO: add context menu in addition to dialog
+                    onLongPress: () => deleteSetup(context, setup, setupModel),
                   ),
                 ),
-              for (Setup setup in setupList.reversed)
-                ListTile(
-                  title: Text(setup.name),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => SetupDetail(
-                                setupId: setup.id,
-                              )),
-                    );
-                  },
-                  // TODO: add context menu in addition to dialog
-                  onLongPress: () => deleteSetup(context, setup, setupModel),
-                )
             ],
           );
         },
@@ -145,12 +174,13 @@ class _HomePageState extends State<HomePage> {
             child: const Text('Cancel'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () async {
               await setupModel.deleteSetup(setup);
               if (!context.mounted) return;
               Navigator.pop(context, 'OK');
             },
-            child: const Text('OK'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -163,7 +193,7 @@ class _HomePageState extends State<HomePage> {
     if (!context.mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup saved successfully')),
+        const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Backup saved successfully')),
       );
     }
   }
@@ -183,11 +213,12 @@ class _HomePageState extends State<HomePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('CANCEL'),
+            child: const Text('Cancel'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(dialogContext).colorScheme.error),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('RESTORE'),
+            child: const Text('Restore'),
           ),
         ],
       ),
@@ -198,7 +229,7 @@ class _HomePageState extends State<HomePage> {
     await model.restoreFromFile(filePath);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Setups restored successfully')),
+      const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Setups restored successfully')),
     );
   }
 }

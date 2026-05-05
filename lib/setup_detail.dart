@@ -22,7 +22,6 @@ class SetupDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Consumer<SetupStorageModel>(builder: (context, setupModel, child) {
       var setup = setupModel.getSetup(setupId);
       if (setup == null) {
@@ -32,7 +31,6 @@ class SetupDetail extends StatelessWidget {
       } else {
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: theme.colorScheme.surface,
             title: Text(setup.name),
             actions: [
               IconButton(
@@ -166,13 +164,16 @@ class History extends StatelessWidget {
         const TitleWithIcon(title: 'History'),
         for (SettingChanges settingChange in setup.history.reversed)
           Card(
-            surfaceTintColor: theme.colorScheme.secondary,
+            color: Color.alphaBlend(
+              theme.colorScheme.secondary.withValues(alpha: 0.05),
+              theme.colorScheme.surfaceContainerLow,
+            ),
             clipBehavior: Clip.antiAliasWithSaveLayer,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  color: theme.colorScheme.secondary.withOpacity(0.08),
+                  color: theme.colorScheme.secondary.withValues(alpha:0.08),
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -182,7 +183,7 @@ class History extends StatelessWidget {
                               .format(settingChange.date)),
                         ),
                         Divider(
-                          color: theme.colorScheme.secondary.withOpacity(0.3),
+                          color: theme.colorScheme.secondary.withValues(alpha:0.3),
                           height: 0,
                         ),
                         if (settingChange.comment != null &&
@@ -199,7 +200,7 @@ class History extends StatelessWidget {
                             ),
                           ),
                         Divider(
-                          color: theme.colorScheme.secondary.withOpacity(0.3),
+                          color: theme.colorScheme.secondary.withValues(alpha:0.3),
                           height: 0,
                         ),
                       ]),
@@ -250,18 +251,24 @@ class _OverflowMenuState extends State<OverflowMenu> {
     return PopupMenuButton(
         itemBuilder: (context) => [
               PopupMenuItem(
-                child: const ListTile(
-                  leading: Icon(Icons.copy),
-                  title: Text('Clone'),
-                ),
                 onTap: () => duplicate(context),
+                child: const Row(
+                  spacing: 12,
+                  children: [
+                    Icon(Icons.copy),
+                    Text('Clone'),
+                  ],
+                ),
               ),
               PopupMenuItem(
-                child: const ListTile(
-                  leading: Icon(Icons.delete),
-                  title: Text('Delete'),
-                ),
                 onTap: () => delete(context),
+                child: const Row(
+                  spacing: 12,
+                  children: [
+                    Icon(Icons.delete),
+                    Text('Delete'),
+                  ],
+                ),
               ),
             ]);
   }
@@ -317,6 +324,7 @@ class _OverflowMenuState extends State<OverflowMenu> {
             child: const Text('Cancel'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             onPressed: () async {
               await Provider.of<SetupStorageModel>(context, listen: false)
                   .deleteSetup(widget.setup);
@@ -324,7 +332,7 @@ class _OverflowMenuState extends State<OverflowMenu> {
               Navigator.pop(context, 'OK');
               Navigator.pop(context);
             },
-            child: const Text('OK'),
+            child: const Text('Delete'),
           ),
         ],
       ),

@@ -92,13 +92,13 @@ class _SetupEditState extends State<SetupEdit> {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('CANCEL'),
+                  child: const Text('Cancel'),
                   onPressed: () {
                     Navigator.pop(dialogContext);
                   },
                 ),
                 TextButton(
-                  child: const Text('OK'),
+                  child: const Text('Save'),
                   onPressed: () async {
                     if (_commentController.text.isNotEmpty) {
                       settingChanges.comment = _commentController.text;
@@ -123,7 +123,7 @@ class _SetupEditState extends State<SetupEdit> {
     if (!context.mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Setup saved successfully')),
+      const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Setup saved successfully')),
     );
   }
 
@@ -233,8 +233,7 @@ class _SetupEditState extends State<SetupEdit> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
-        title: Text(widget.setup?.name ?? ''),
+        title: Text(widget.setup?.name ?? 'New Setup'),
       ),
       body: SingleChildScrollView(
         child: Form(

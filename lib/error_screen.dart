@@ -16,7 +16,6 @@ class ErrorScreenWidget extends StatelessWidget {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
         title: Text(title),
       ),
       body: Align(
