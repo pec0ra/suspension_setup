@@ -37,8 +37,18 @@ jobs:
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/screenshot_test.dart \
+            --profile \
             -d "$DEVICE_ID"
           xcrun simctl shutdown "$DEVICE_ID"
+
+      - name: Crop status bar area
+        # iPhone 16 Plus safe area: 59pt × 3x scale = 177 physical pixels
+        run: |
+          for f in screenshots/*.png; do
+            H=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
+            W=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
+            sips -c $((H - 177)) $W --cropOffset 0 177 "$f"
+          done
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
