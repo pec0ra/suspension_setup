@@ -28,6 +28,11 @@ jobs:
         run: |
           DEVICE_ID=$(xcrun simctl list devices available \
             | grep "iPhone 16 Plus" | head -1 | grep -oE '[0-9A-F-]{36}')
+          if [ -z "$DEVICE_ID" ]; then
+            echo "ERROR: No 'iPhone 16 Plus' simulator found. Available simulators:"
+            xcrun simctl list devices available | grep -E "iPhone|iPad"
+            exit 1
+          fi
           xcrun simctl boot "$DEVICE_ID"
           flutter drive \
             --driver=test_driver/integration_test.dart \
