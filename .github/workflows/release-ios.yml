@@ -69,8 +69,10 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$API_KEY_BASE64" | base64 --decode \
             > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
+          IPA=$(find $RUNNER_TEMP/ipa -name "*.ipa" | head -1)
+          echo "Uploading: $IPA"
           xcrun altool --upload-app \
-            -f $RUNNER_TEMP/ipa/Runner.ipa \
+            -f "$IPA" \
             --type ios \
             -apiKey "$API_KEY_ID" \
             -apiIssuer "$API_ISSUER_ID"
