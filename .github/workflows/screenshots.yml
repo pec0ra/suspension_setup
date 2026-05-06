@@ -18,13 +18,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Install ffmpeg
+        run: brew install ffmpeg
+
       - name: Set up Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-
-      - name: List available simulators
-        run: xcrun simctl list devices available | grep -E "iPhone|iPad"
-
-      - uses: FedericoCarboni/setup-ffmpeg@v3
 
       - name: Take screenshots
         run: |
