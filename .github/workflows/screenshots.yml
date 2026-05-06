@@ -1,0 +1,40 @@
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.5'
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Take screenshots (6.7")
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/screenshot_test.dart \
+            -d "iPhone 16 Plus"
+
+      - name: Take screenshots (5.5")
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/screenshot_test.dart \
+            -d "iPhone 8 Plus"
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screenshots
+          path: "screenshots/**/*.png"
+          if-no-files-found: error
