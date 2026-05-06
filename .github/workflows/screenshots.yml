@@ -44,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-screenshots
-          path: "screenshots/**/*.png"
+          path: "screenshots/*.png"
           if-no-files-found: error
