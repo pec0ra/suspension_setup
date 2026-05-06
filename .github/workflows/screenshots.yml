@@ -24,21 +24,10 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available | grep -E "iPhone|iPad"
 
-      - name: Take screenshots (6.7")
+      - name: Take screenshots
         run: |
           DEVICE_ID=$(xcrun simctl list devices available \
             | grep "iPhone 16 Plus" | head -1 | grep -oE '[0-9A-F-]{36}')
-          xcrun simctl boot "$DEVICE_ID"
-          flutter drive \
-            --driver=test_driver/integration_test.dart \
-            --target=integration_test/screenshot_test.dart \
-            -d "$DEVICE_ID"
-          xcrun simctl shutdown "$DEVICE_ID"
-
-      - name: Take screenshots (5.5")
-        run: |
-          DEVICE_ID=$(xcrun simctl list devices available \
-            | grep "iPhone 8 Plus" | head -1 | grep -oE '[0-9A-F-]{36}')
           xcrun simctl boot "$DEVICE_ID"
           flutter drive \
             --driver=test_driver/integration_test.dart \
