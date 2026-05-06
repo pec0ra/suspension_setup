@@ -37,7 +37,7 @@ jobs:
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/screenshot_test.dart \
-            --profile \
+            --dart-define=SCREENSHOTS=true \
             -d "$DEVICE_ID"
           xcrun simctl shutdown "$DEVICE_ID"
 
