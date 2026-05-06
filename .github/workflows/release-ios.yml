@@ -78,5 +78,5 @@ jobs:
           xcrun altool --upload-app \
             -f "$IPA" \
             --type ios \
-            -apiKey "$API_KEY_ID" \
-            -apiIssuer "$API_ISSUER_ID"
+            --api-key "$API_KEY_ID" \
+            --api-issuer "$API_ISSUER_ID"
