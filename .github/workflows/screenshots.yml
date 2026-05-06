@@ -24,6 +24,8 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available | grep -E "iPhone|iPad"
 
+      - uses: FedericoCarboni/setup-ffmpeg@v3
+
       - name: Take screenshots
         run: |
           DEVICE_ID=$(xcrun simctl list devices available \
