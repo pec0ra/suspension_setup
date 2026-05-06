@@ -17,22 +17,35 @@ void main() {
     app.main();
     await tester.pumpAndSettle();
 
-    await binding.convertFlutterSurfaceToImage();
-    await tester.pumpAndSettle();
-    await binding.takeScreenshot('01_home');
+    await _screenshot(binding, tester, '01_home');
 
     await tester.tap(find.text('Yeti'));
     await tester.pumpAndSettle();
-    await binding.convertFlutterSurfaceToImage();
+    await _screenshot(binding, tester, '02_detail');
+
+    await Scrollable.ensureVisible(
+      tester.element(find.text('History')),
+      alignment: 0.0,
+      duration: Duration.zero,
+    );
     await tester.pumpAndSettle();
-    await binding.takeScreenshot('02_detail');
+    await _screenshot(binding, tester, '03_history');
 
     await tester.tap(find.byIcon(Icons.edit));
     await tester.pumpAndSettle();
-    await binding.convertFlutterSurfaceToImage();
-    await tester.pumpAndSettle();
-    await binding.takeScreenshot('03_edit');
+    await _screenshot(binding, tester, '04_edit');
   });
+}
+
+Future<void> _screenshot(
+  IntegrationTestWidgetsFlutterBinding binding,
+  WidgetTester tester,
+  String name,
+) async {
+  if (!Platform.isIOS && !Platform.isAndroid) return;
+  await binding.convertFlutterSurfaceToImage();
+  await tester.pumpAndSettle();
+  await binding.takeScreenshot(name);
 }
 
 // demo.json data migrated to schema v2
