@@ -37,7 +37,6 @@ jobs:
           flutter drive \
             --driver=test_driver/integration_test.dart \
             --target=integration_test/screenshot_test.dart \
-            --dart-define=SCREENSHOTS=true \
             -d "$DEVICE_ID"
           xcrun simctl shutdown "$DEVICE_ID"
 
@@ -47,7 +46,7 @@ jobs:
           for f in screenshots/*.png; do
             H=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
             W=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
-            sips -c $((H - 177)) $W --cropOffset 0 177 "$f"
+            sips -c $((H - 177)) $W --cropOffset 177 0 "$f"
           done
 
       - name: Upload screenshots

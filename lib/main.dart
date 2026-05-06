@@ -19,7 +19,7 @@ class SuspensionSetupApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-        debugShowCheckedModeBanner: !bool.fromEnvironment('SCREENSHOTS'),
+        debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff88a6c3), secondary: const Color(0xffff954f), primaryContainer: const Color(0xffc8d8e8), onPrimaryContainer: const Color(0xff1c2e3c)),
         useMaterial3: true,
