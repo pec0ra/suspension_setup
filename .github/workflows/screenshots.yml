@@ -41,12 +41,15 @@ jobs:
           xcrun simctl shutdown "$DEVICE_ID"
 
       - name: Crop status bar area
-        # iPhone 16 Plus safe area: 59pt × 3x scale = 177 physical pixels
+        # iPhone 16 Plus Dynamic Island: 59pt × 3x scale = 177 physical pixels
+        # ffmpeg crop=w:h:x:y — remove top 177px by starting at y=177
         run: |
           for f in screenshots/*.png; do
             H=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
             W=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
-            sips -c $((H - 177)) $W --cropOffset 177 0 "$f"
+            tmp="${f%.png}_tmp.png"
+            ffmpeg -loglevel error -i "$f" -vf "crop=${W}:$((H-177)):0:177" -y "$tmp"
+            mv "$tmp" "$f"
           done
 
       - name: Upload screenshots
