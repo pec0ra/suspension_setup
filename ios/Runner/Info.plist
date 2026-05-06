@@ -47,6 +47,8 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Used to import and export your suspension setup backups.</string>
 	</dict>

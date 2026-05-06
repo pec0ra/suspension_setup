@@ -21,7 +21,10 @@ jobs:
       - name: Set up Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      - name: Take screenshots
+      - name: List available simulators
+        run: xcrun simctl list devices available | grep -E "iPhone|iPad"
+
+      - name: Take iPhone screenshots
         run: |
           DEVICE_ID=$(xcrun simctl list devices available \
             | grep "iPhone 16 Plus" | head -1 | grep -oE '[0-9A-F-]{36}')
@@ -36,10 +39,37 @@ jobs:
             --target=integration_test/screenshot_test.dart \
             -d "$DEVICE_ID"
           xcrun simctl shutdown "$DEVICE_ID"
+          mkdir -p screenshots/iphone
+          mv screenshots/*.png screenshots/iphone/
 
-      - name: Upload screenshots
+      - name: Take iPad screenshots
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available \
+            | grep "iPad Pro 13-inch" | head -1 | grep -oE '[0-9A-F-]{36}')
+          if [ -z "$DEVICE_ID" ]; then
+            echo "ERROR: No 'iPad Pro 13-inch' simulator found. Available simulators:"
+            xcrun simctl list devices available | grep -E "iPhone|iPad"
+            exit 1
+          fi
+          xcrun simctl boot "$DEVICE_ID"
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/screenshot_test.dart \
+            -d "$DEVICE_ID"
+          xcrun simctl shutdown "$DEVICE_ID"
+          mkdir -p screenshots/ipad
+          mv screenshots/*.png screenshots/ipad/
+
+      - name: Upload iPhone screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: ios-screenshots
-          path: "screenshots/*.png"
+          name: iphone-screenshots
+          path: "screenshots/iphone/*.png"
+          if-no-files-found: error
+
+      - name: Upload iPad screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipad-screenshots
+          path: "screenshots/ipad/*.png"
           if-no-files-found: error
