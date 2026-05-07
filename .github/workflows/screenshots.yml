@@ -24,25 +24,6 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available | grep -E "iPhone|iPad"
 
-      - name: Take iPhone screenshots
-        run: |
-          DEVICE_ID=$(xcrun simctl list devices available \
-            | grep "iPhone 16 Plus" | head -1 | grep -oE '[0-9A-F-]{36}')
-          if [ -z "$DEVICE_ID" ]; then
-            echo "ERROR: No 'iPhone 16 Plus' simulator found. Available simulators:"
-            xcrun simctl list devices available | grep -E "iPhone|iPad"
-            exit 1
-          fi
-          xcrun simctl boot "$DEVICE_ID"
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-          flutter drive \
-            --driver=test_driver/integration_test.dart \
-            --target=integration_test/screenshot_test.dart \
-            -d "$DEVICE_ID"
-          xcrun simctl shutdown "$DEVICE_ID"
-          mkdir -p screenshots/iphone
-          mv screenshots/*.png screenshots/iphone/
-
       - name: Take iPad screenshots
         run: |
           DEVICE_ID=$(xcrun simctl list devices available \
