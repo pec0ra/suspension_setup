@@ -109,7 +109,7 @@ class SettingsFormController {
 }
 
 class FieldFormController {
-  FieldFormController({required bool enabled, int? value, required String unit})
+  FieldFormController({required bool enabled, num? value, required String unit})
       : enabled = ValueNotifier(enabled),
         value = TextEditingController(text: value?.toString() ?? ''),
         unit = TextEditingController(text: unit);

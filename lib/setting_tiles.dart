@@ -134,7 +134,7 @@ class SettingTile extends StatelessWidget {
   });
 
   final String name;
-  final int value;
+  final num value;
   final String unit;
 
   @override
@@ -202,15 +202,20 @@ class FieldEditCard extends StatelessWidget {
                               labelText: 'Value',
                               labelStyle: theme.textTheme.bodySmall,
                             ),
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
                             inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.]')),
                             ],
                             controller: controller.value,
                             validator: (v) {
-                              if (controller.enabled.value &&
-                                  (v == null || v.isEmpty)) {
+                              if (!controller.enabled.value) return null;
+                              if (v == null || v.isEmpty) {
                                 return 'Value required';
+                              }
+                              if (num.tryParse(v) == null) {
+                                return 'Invalid number';
                               }
                               return null;
                             },
