@@ -64,6 +64,21 @@ void main() {
     });
   });
 
+  group('Field', () {
+    test('roundtrips a decimal value through JSON', () {
+      const original = Field(value: 28.5, unit: 'PSI');
+      final restored = Field.fromJson(original.toJson());
+      expect(restored.value, 28.5);
+      expect(restored.unit, 'PSI');
+    });
+
+    test('legacy integer JSON parses as int (no coercion to double)', () {
+      final restored = Field.fromJson({'value': 100, 'unit': 'PSI'});
+      expect(restored.value, 100);
+      expect(restored.value, isA<int>());
+    });
+  });
+
   group('SettingChange', () {
     test('roundtrips through JSON', () {
       final change = SettingChange(
@@ -77,6 +92,18 @@ void main() {
       expect(restored.settingType, SettingType.airPressure);
       expect(restored.oldValue, 100);
       expect(restored.newValue, 120);
+    });
+
+    test('roundtrips decimal old/new values through JSON', () {
+      final change = SettingChange(
+        suspensionType: SuspensionType.tyre,
+        settingType: SettingType.frontTyrePressure,
+        oldValue: 27.5,
+        newValue: 28.25,
+      );
+      final restored = SettingChange.fromJson(change.toJson());
+      expect(restored.oldValue, 27.5);
+      expect(restored.newValue, 28.25);
     });
 
     test('roundtrips with null values (new setup, no prior value)', () {
@@ -236,6 +263,35 @@ void main() {
       final setup = Setup.fromJson(json);
       expect(setup.tyres.front, isNull);
       expect(setup.tyres.rear, isNull);
+    });
+
+    test('roundtrips a setup containing decimal field values', () {
+      final original = Setup(
+        id: 'decimal-id',
+        name: 'Decimal setup',
+        fork: Settings(
+          airPressure: const Field(value: 73.5, unit: 'PSI'),
+          sag: const Field(value: 17, unit: '%'),
+          lsc: const Field(value: 8, unit: 'Clicks'),
+          lsr: const Field(value: 6, unit: 'Clicks'),
+        ),
+        shock: Settings(
+          airPressure: const Field(value: 165, unit: 'PSI'),
+          sag: const Field(value: 27, unit: '%'),
+          lsc: const Field(value: 8, unit: 'Clicks'),
+          lsr: const Field(value: 8, unit: 'Clicks'),
+        ),
+        tyres: Tyres(
+          front: const Field(value: 22.5, unit: 'PSI'),
+          rear: const Field(value: 24.75, unit: 'PSI'),
+        ),
+        history: [],
+      );
+      final restored = Setup.fromJson(original.toJson());
+      expect(restored.fork.airPressure?.value, 73.5);
+      expect(restored.tyres.front?.value, 22.5);
+      expect(restored.tyres.rear?.value, 24.75);
+      expect(restored.fork.sag?.value, isA<int>());
     });
 
     test('clone without history produces empty history', () {

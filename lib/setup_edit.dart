@@ -143,7 +143,7 @@ class _SetupEditState extends State<SetupEdit> {
       void Function(Field?) setter,
     ) {
       final newField = ctrl.enabled.value
-          ? Field(value: int.parse(ctrl.value.text), unit: ctrl.unit.text)
+          ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
           : null;
 
       if (isEditing) {
@@ -198,7 +198,7 @@ class _SetupEditState extends State<SetupEdit> {
       void Function(Field?) setter,
     ) {
       final newField = ctrl.enabled.value
-          ? Field(value: int.parse(ctrl.value.text), unit: ctrl.unit.text)
+          ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
           : null;
 
       if (isEditing) {

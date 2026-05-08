@@ -40,8 +40,8 @@ class SettingChanges {
 class SettingChange {
   final SuspensionType suspensionType;
   final SettingType settingType;
-  final int? oldValue;
-  final int? newValue;
+  final num? oldValue;
+  final num? newValue;
   final bool? oldEnabled;
   final bool? newEnabled;
 
