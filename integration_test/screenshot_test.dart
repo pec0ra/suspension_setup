@@ -93,6 +93,8 @@ const _fixture = {
         'hsr': {'value': 6, 'unit': 'Clicks'},
         'lsc': {'value': 19, 'unit': 'Clicks'},
         'hsc': {'value': 6, 'unit': 'Clicks'},
+        'serialNumber': 'WB220A01234',
+        'infoUrl': 'https://tech.ridefox.com/bike/service-procedures/2962/2025',
       },
       'shock': {
         'airPressure': {'value': 165, 'unit': 'PSI'},
