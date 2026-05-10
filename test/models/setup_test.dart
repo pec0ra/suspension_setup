@@ -398,7 +398,7 @@ void main() {
   });
 
   group('computeUndo', () {
-    Setup _setup({
+    Setup makeSetup({
       num forkAir = 110,
       num forkLsc = 10,
       num? frontTyre,
@@ -427,7 +427,7 @@ void main() {
           history: [],
         );
 
-    SettingChange _change({
+    SettingChange makeChange({
       SuspensionType suspension = SuspensionType.fork,
       SettingType setting = SettingType.airPressure,
       num? oldValue,
@@ -445,9 +445,9 @@ void main() {
         );
 
     test('returns undo change when value differs from old value', () {
-      final setup = _setup(forkAir: 110);
+      final setup = makeSetup(forkAir: 110);
       final entry = SettingChanges(
-        changes: [_change(oldValue: 100, newValue: 110)],
+        changes: [makeChange(oldValue: 100, newValue: 110)],
         date: DateTime.now(),
       );
       final result = setup.computeUndo(entry);
@@ -458,22 +458,22 @@ void main() {
     });
 
     test('skips change when current value already equals old value (no-op)', () {
-      final setup = _setup(forkAir: 100);
+      final setup = makeSetup(forkAir: 100);
       final entry = SettingChanges(
-        changes: [_change(oldValue: 100, newValue: 110)],
+        changes: [makeChange(oldValue: 100, newValue: 110)],
         date: DateTime.now(),
       );
       expect(setup.computeUndo(entry), isEmpty);
     });
 
     test('returns empty list for entry with no changes', () {
-      final setup = _setup();
+      final setup = makeSetup();
       final entry = SettingChanges(changes: [], date: DateTime.now());
       expect(setup.computeUndo(entry), isEmpty);
     });
 
     test('asserts when called on a creation entry', () {
-      final setup = _setup();
+      final setup = makeSetup();
       final entry = SettingChanges(
         changes: [],
         date: DateTime.now(),
@@ -485,10 +485,10 @@ void main() {
     test('undo of enable: disables field and sets newValue to null', () {
       // change was: disabled→enabled (oldEnabled=false, newEnabled=true, newValue=120)
       // current state: field enabled at 120; undo should disable it
-      final setup = _setup(forkAir: 120);
+      final setup = makeSetup(forkAir: 120);
       final entry = SettingChanges(
         changes: [
-          _change(oldValue: null, newValue: 120, oldEnabled: false, newEnabled: true),
+          makeChange(oldValue: null, newValue: 120, oldEnabled: false, newEnabled: true),
         ],
         date: DateTime.now(),
       );
@@ -520,7 +520,7 @@ void main() {
       );
       final entry = SettingChanges(
         changes: [
-          _change(
+          makeChange(
             setting: SettingType.airPressure,
             oldValue: 100,
             newValue: null,
@@ -537,10 +537,10 @@ void main() {
     });
 
     test('handles tyre pressure undo', () {
-      final setup = _setup(frontTyre: 24);
+      final setup = makeSetup(frontTyre: 24);
       final entry = SettingChanges(
         changes: [
-          _change(
+          makeChange(
             suspension: SuspensionType.tyre,
             setting: SettingType.frontTyrePressure,
             oldValue: 22,
@@ -557,11 +557,11 @@ void main() {
 
     test('handles multiple fields with partial no-ops', () {
       // forkAir already at old value (100), forkLsc changed (8→10)
-      final setup = _setup(forkAir: 100, forkLsc: 10);
+      final setup = makeSetup(forkAir: 100, forkLsc: 10);
       final entry = SettingChanges(
         changes: [
-          _change(setting: SettingType.airPressure, oldValue: 100, newValue: 110),
-          _change(setting: SettingType.lsc, oldValue: 8, newValue: 10),
+          makeChange(setting: SettingType.airPressure, oldValue: 100, newValue: 110),
+          makeChange(setting: SettingType.lsc, oldValue: 8, newValue: 10),
         ],
         date: DateTime.now(),
       );
