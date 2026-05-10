@@ -95,6 +95,35 @@ void main() {
     });
   });
 
+  group('migrateV2ToV3 — id field', () {
+    test('adds id to first history entry', () {
+      final data = _v2Data(_v2Setup(history: [_v2History()]));
+      final history = migrateV2ToV3(data)['setups']['id-1']['history'] as List;
+      expect(history[0]['id'], isA<String>());
+    });
+
+    test('adds id to all history entries', () {
+      final data = _v2Data(_v2Setup(history: [
+        _v2History(date: '2024-01-01T00:00:00.000Z'),
+        _v2History(date: '2024-01-02T00:00:00.000Z'),
+        _v2History(date: '2024-01-03T00:00:00.000Z'),
+      ]));
+      final history = migrateV2ToV3(data)['setups']['id-1']['history'] as List;
+      expect(history[0]['id'], isA<String>());
+      expect(history[1]['id'], isA<String>());
+      expect(history[2]['id'], isA<String>());
+    });
+
+    test('ids are unique across entries', () {
+      final data = _v2Data(_v2Setup(history: [
+        _v2History(date: '2024-01-01T00:00:00.000Z'),
+        _v2History(date: '2024-01-02T00:00:00.000Z'),
+      ]));
+      final history = migrateV2ToV3(data)['setups']['id-1']['history'] as List;
+      expect(history[0]['id'], isNot(history[1]['id']));
+    });
+  });
+
   group('migrateV2ToV3 — preserves history entry fields', () {
     test('preserves date on first entry', () {
       final data = _v2Data(_v2Setup(history: [_v2History(date: '2024-06-15T10:30:00.000Z')]));

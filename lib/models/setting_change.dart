@@ -1,18 +1,23 @@
+import 'package:uuid/uuid.dart';
+
 class SettingChanges {
+  final String id;
   final List<SettingChange> changes;
   final DateTime date;
   String? comment;
   final bool isCreationEntry;
 
   SettingChanges({
+    String? id,
     required this.changes,
     required this.date,
     this.comment,
     this.isCreationEntry = false,
-  });
+  }) : id = id ?? const Uuid().v1();
 
   factory SettingChanges.fromJson(Map<String, dynamic> json) {
     return SettingChanges(
+      id: json['id'] as String,
       changes: List<SettingChange>.from(
           json['changes'].map((c) => SettingChange.fromJson(c))),
       date: DateTime.parse((json['date'])),
@@ -23,6 +28,7 @@ class SettingChanges {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'changes': changes.map((c) => c.toJson()).toList(),
       'date': date.toIso8601String(),
       'comment': comment,
@@ -32,6 +38,7 @@ class SettingChanges {
 
   SettingChanges clone() {
     return SettingChanges(
+      id: id,
       changes: changes.map((e) => e.clone()).toList(),
       date: date,
       comment: comment,

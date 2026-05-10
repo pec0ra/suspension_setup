@@ -59,6 +59,7 @@ class Setup {
   Setup copyMutable() => Setup.fromJson(toJson());
 
   List<SettingChange> computeUndo(SettingChanges historyEntry) {
+    assert(!historyEntry.isCreationEntry, 'cannot undo a creation entry');
     final result = <SettingChange>[];
     for (final change in historyEntry.changes) {
       final Field? currentField;
@@ -98,6 +99,9 @@ class Setup {
     for (final change in changes) {
       final bool targetEnabled = change.newEnabled ?? true;
       final num? targetValue = change.newValue;
+      assert(!targetEnabled || targetValue != null,
+          'targetValue must not be null when targetEnabled is true');
+      if (targetEnabled && targetValue == null) continue;
 
       if (change.suspensionType == SuspensionType.tyre) {
         final isFront = change.settingType == SettingType.frontTyrePressure;

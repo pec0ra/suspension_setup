@@ -344,7 +344,7 @@ class History extends StatelessWidget {
               Navigator.pop(dialogContext);
               final newSetup = setup.copyMutable();
               final target = newSetup.history.firstWhere(
-                (e) => e.date == entry.date,
+                (e) => e.id == entry.id,
               );
               target.comment = newComment.isEmpty ? null : newComment;
               await Provider.of<SetupStorageModel>(context, listen: false)
@@ -354,7 +354,7 @@ class History extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 
   void _showHistoryItemSheet(BuildContext context, SettingChanges entry) {
