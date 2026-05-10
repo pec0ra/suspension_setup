@@ -6,7 +6,7 @@ Suspension Setup is an application that helps you remember and track changes in 
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid"
     height="80">](https://f-droid.org/packages/ch.pec0ra.suspension_setup/)
-[<img src="https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg" alt="Download on the App Store" height="80" width="270">](https://apps.apple.com/us/app/suspension-setup/id6766823456)
+[<img src="https://raw.githubusercontent.com/pec0ra/suspension_setup/main/assets/app_store_badge.png" alt="Download on the App Store" height="80">](https://apps.apple.com/us/app/suspension-setup/id6766823456)
 
 ## License
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
