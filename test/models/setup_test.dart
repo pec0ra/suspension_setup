@@ -49,6 +49,56 @@ void main() {
       expect(restored.hsr, isNull);
     });
 
+    test('serialNumber and infoUrl roundtrip through JSON', () {
+      final settings = Settings(
+        airPressure: const Field(value: 100, unit: 'PSI'),
+        serialNumber: 'SN-ABC-123',
+        infoUrl: 'https://example.com/product',
+      );
+      final restored = Settings.fromJson(settings.toJson());
+      expect(restored.serialNumber, 'SN-ABC-123');
+      expect(restored.infoUrl, 'https://example.com/product');
+    });
+
+    test('hasAnyField true when only serialNumber set', () {
+      expect(Settings(serialNumber: 'SN-123').hasAnyField, isTrue);
+    });
+
+    test('hasAnyField true when only infoUrl set', () {
+      expect(Settings(infoUrl: 'https://example.com').hasAnyField, isTrue);
+    });
+
+    test('hasAnyField false when no fields set', () {
+      expect(Settings().hasAnyField, isFalse);
+    });
+
+    test('clone copies serialNumber and infoUrl', () {
+      final original = Settings(
+        airPressure: const Field(value: 80, unit: 'PSI'),
+        serialNumber: 'SN-ORIG',
+        infoUrl: 'https://orig.example.com',
+      );
+      final clone = original.clone();
+      expect(clone.serialNumber, 'SN-ORIG');
+      expect(clone.infoUrl, 'https://orig.example.com');
+    });
+
+    test('deserializes JSON without serialNumber/infoUrl keys (backwards compat)', () {
+      final json = {
+        'airPressure': {'value': 100, 'unit': 'PSI'},
+        'sag': null,
+        'volumeSpacer': null,
+        'lsc': null,
+        'hsc': null,
+        'lsr': null,
+        'hsr': null,
+      };
+      final settings = Settings.fromJson(json);
+      expect(settings.serialNumber, isNull);
+      expect(settings.infoUrl, isNull);
+      expect(settings.airPressure?.value, 100);
+    });
+
     test('clone produces equal but independent copy', () {
       final original = Settings(
         airPressure: const Field(value: 80, unit: 'PSI'),

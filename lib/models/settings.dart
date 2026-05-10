@@ -10,6 +10,8 @@ class Settings {
   Field? hsr;
   Field? lsc;
   Field? hsc;
+  String? serialNumber;
+  String? infoUrl;
 
   Settings({
     this.airPressure,
@@ -19,6 +21,8 @@ class Settings {
     this.hsr,
     this.lsc,
     this.hsc,
+    this.serialNumber,
+    this.infoUrl,
   });
 
   factory Settings.fromJson(Map<String, dynamic> json) {
@@ -36,6 +40,8 @@ class Settings {
       hsr: parse('hsr'),
       lsc: parse('lsc'),
       hsc: parse('hsc'),
+      serialNumber: json['serialNumber'] as String?,
+      infoUrl: json['infoUrl'] as String?,
     );
   }
 
@@ -48,6 +54,8 @@ class Settings {
       'hsr': hsr?.toJson(),
       'lsc': lsc?.toJson(),
       'hsc': hsc?.toJson(),
+      'serialNumber': serialNumber,
+      'infoUrl': infoUrl,
     };
   }
 
@@ -82,7 +90,9 @@ class Settings {
       lsr != null ||
       hsr != null ||
       lsc != null ||
-      hsc != null;
+      hsc != null ||
+      serialNumber != null ||
+      infoUrl != null;
 
   Field? fieldFor(SettingType type) => switch (type) {
         SettingType.airPressure => airPressure,
@@ -104,6 +114,8 @@ class Settings {
       hsr: hsr,
       lsc: lsc,
       hsc: hsc,
+      serialNumber: serialNumber,
+      infoUrl: infoUrl,
     );
   }
 }

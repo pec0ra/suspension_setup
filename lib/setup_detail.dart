@@ -5,8 +5,10 @@ import 'package:suspension_setup/error_screen.dart';
 import 'package:suspension_setup/models/setup.dart';
 import 'package:suspension_setup/suspension_icons.dart';
 import 'package:suspension_setup/text_with_icon.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'models/setting_change.dart';
+import 'models/settings.dart';
 import 'setting_tiles.dart';
 import 'setup_edit.dart';
 import 'setup_storage_model.dart';
@@ -65,11 +67,13 @@ class SetupDetail extends StatelessWidget {
                   if (setup.fork.hasAnyField) ...[
                     const TitleWithIcon(
                         title: 'Fork', icon: SuspensionIcons.fork),
+                    _ComponentInfo(settings: setup.fork),
                     SettingTiles(settings: setup.fork),
                   ],
                   if (setup.shock.hasAnyField) ...[
                     const TitleWithIcon(
                         title: 'Shock', icon: SuspensionIcons.shock),
+                    _ComponentInfo(settings: setup.shock),
                     SettingTiles(settings: setup.shock),
                   ],
                   if (setup.tyres.hasAnyField) ...[
@@ -85,6 +89,71 @@ class SetupDetail extends StatelessWidget {
         );
       }
     });
+  }
+}
+
+class _ComponentInfo extends StatelessWidget {
+  const _ComponentInfo({required this.settings});
+
+  final Settings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final sn = settings.serialNumber;
+    final url = settings.infoUrl;
+    if (sn == null && url == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.surfaceContainerHigh,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text('Product Information', style: theme.textTheme.titleMedium),
+          ),
+          const Divider(height: 0),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Row(
+              children: [
+                if (sn != null) ...[
+                  Icon(Icons.tag, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Serial Number',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(sn, style: theme.textTheme.bodyMedium),
+                      ],
+                    ),
+                  ),
+                ],
+                if (url != null)
+                  OutlinedButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse(url),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    icon: const Icon(Icons.open_in_browser),
+                    label: const Text('Manufacturer Page'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

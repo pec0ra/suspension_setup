@@ -87,7 +87,9 @@ class SettingsFormController {
           enabled: settings?.hsr != null,
           value: settings?.hsr?.value,
           unit: settings?.hsr?.unit ?? Settings.defaultUnits[SettingType.hsr]!,
-        );
+        ),
+        serialNumber = TextEditingController(text: settings?.serialNumber),
+        infoUrl = TextEditingController(text: settings?.infoUrl);
 
   final FieldFormController airPressure;
   final FieldFormController volumeSpacer;
@@ -96,6 +98,8 @@ class SettingsFormController {
   final FieldFormController hsr;
   final FieldFormController lsc;
   final FieldFormController hsc;
+  final TextEditingController serialNumber;
+  final TextEditingController infoUrl;
 
   void dispose() {
     airPressure.dispose();
@@ -105,6 +109,8 @@ class SettingsFormController {
     hsr.dispose();
     lsc.dispose();
     hsc.dispose();
+    serialNumber.dispose();
+    infoUrl.dispose();
   }
 }
 

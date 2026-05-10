@@ -71,6 +71,16 @@ class _SetupEditState extends State<SetupEdit> {
         newSetup.tyres,
       );
 
+      String? trimmed(TextEditingController ctrl) {
+        final t = ctrl.text.trim();
+        return t.isEmpty ? null : t;
+      }
+
+      newSetup.fork.serialNumber = trimmed(_setupFormController.fork.serialNumber);
+      newSetup.fork.infoUrl = trimmed(_setupFormController.fork.infoUrl);
+      newSetup.shock.serialNumber = trimmed(_setupFormController.shock.serialNumber);
+      newSetup.shock.infoUrl = trimmed(_setupFormController.shock.infoUrl);
+
       if (settingChanges.changes.isNotEmpty) {
         newSetup.history.add(settingChanges);
       } else if (widget.setup == null || widget.setup!.history.isEmpty) {
@@ -260,11 +270,19 @@ class _SetupEditState extends State<SetupEdit> {
                   settings: widget.setup?.fork,
                   settingsFormController: _setupFormController.fork,
                 ),
+                _ComponentInfoFields(
+                  serialNumberController: _setupFormController.fork.serialNumber,
+                  infoUrlController: _setupFormController.fork.infoUrl,
+                ),
                 const TitleWithIcon(
                     title: 'Shock', icon: SuspensionIcons.shock),
                 SettingTiles(
                   settings: widget.setup?.shock,
                   settingsFormController: _setupFormController.shock,
+                ),
+                _ComponentInfoFields(
+                  serialNumberController: _setupFormController.shock.serialNumber,
+                  infoUrlController: _setupFormController.shock.infoUrl,
                 ),
                 const TitleWithIcon(
                     title: 'Tyres', icon: SuspensionIcons.tyre),
@@ -283,6 +301,63 @@ class _SetupEditState extends State<SetupEdit> {
         onPressed: () => _onSetupChanged(context),
         tooltip: 'Save setup',
         child: const Icon(Icons.save),
+      ),
+    );
+  }
+}
+
+String? validateInfoUrl(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  final uri = Uri.tryParse(value.trim());
+  if (uri == null || !uri.hasScheme) {
+    return 'Please enter a valid URL (e.g. https://...)';
+  }
+  return null;
+}
+
+class _ComponentInfoFields extends StatelessWidget {
+  const _ComponentInfoFields({
+    required this.serialNumberController,
+    required this.infoUrlController,
+  });
+
+  final TextEditingController serialNumberController;
+  final TextEditingController infoUrlController;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text('Product Information', style: theme.textTheme.titleMedium),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: serialNumberController,
+                  decoration: const InputDecoration(labelText: 'Serial Number'),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: infoUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Product Information URL',
+                    helperText: "Link to the manufacturer's product page for this component",
+                  ),
+                  keyboardType: TextInputType.url,
+                  validator: validateInfoUrl,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
