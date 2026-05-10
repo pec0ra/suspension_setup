@@ -26,7 +26,9 @@ void main() {
 
     await _screenshot(binding, tester, '01_home');
 
-    await tester.tap(find.text('Yeti'));
+    tester.widget<ListTile>(
+      find.ancestor(of: find.text('Yeti'), matching: find.byType(ListTile)),
+    ).onTap!();
     await tester.pumpAndSettle();
     await _screenshot(binding, tester, '02_detail');
 
@@ -38,7 +40,9 @@ void main() {
     await tester.pumpAndSettle();
     await _screenshot(binding, tester, '03_history');
 
-    await tester.tap(find.byIcon(Icons.edit));
+    tester.widget<IconButton>(
+      find.ancestor(of: find.byIcon(Icons.edit), matching: find.byType(IconButton)),
+    ).onPressed!();
     await tester.pumpAndSettle();
     await _screenshot(binding, tester, '04_edit');
   });
