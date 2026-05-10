@@ -44,9 +44,7 @@ class _SetupEditState extends State<SetupEdit> {
 
   Future<void> _onSetupChanged(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
-      var newSetup = widget.setup != null
-          ? Setup.fromJson(widget.setup!.toJson())
-          : Setup.getDefault();
+      var newSetup = widget.setup?.copyMutable() ?? Setup.getDefault();
       SettingChanges settingChanges =
           SettingChanges(changes: [], date: DateTime.now());
 
