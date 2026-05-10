@@ -17,6 +17,7 @@ flutter build apk        # Android APK
 flutter build web        # Web build
 flutter gen-l10n         # Regenerate localizations (intl)
 dart fix --apply         # Apply automated Dart fixes
+dart format .            # Format all Dart files (enforces trailing newlines, etc.)
 ```
 
 To regenerate icons/splash after editing their config files:
@@ -24,6 +25,13 @@ To regenerate icons/splash after editing their config files:
 flutter pub run flutter_launcher_icons:main
 flutter pub run flutter_native_splash:create
 ```
+
+## Design
+
+The app follows **Material 3** guidelines and best practices. When building or modifying UI:
+- Use M3 components (`FilledButton`, `Card`, `NavigationBar`, etc.) over their M2 equivalents
+- Use color roles from `Theme.of(context).colorScheme` (e.g. `surfaceContainerHigh`, `onSurfaceVariant`) rather than hardcoded colors
+- Refer to [material.io/design](https://material.io/design) for component behavior and spacing guidance
 
 ## Architecture
 
