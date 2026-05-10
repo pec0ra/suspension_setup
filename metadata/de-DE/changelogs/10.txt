@@ -1,0 +1,4 @@
+• Verlaufseinträge können jetzt rückgängig gemacht werden
+• Kommentare zu Verlaufseinträgen bearbeiten
+• Seriennummer und Produktseite für Federgabel und Dämpfer speichern
+• Unterstützung für Dezimalwerte

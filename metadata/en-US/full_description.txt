@@ -7,5 +7,7 @@ Features:
 * Track front and rear tyre pressures
 * Enable or disable individual fields per setup to match your specific components
 * Full change history: every time you save updated settings, the changes are logged with a timestamp
-* Add comments to history entries to note what prompted each change
+* Add or edit comments on history entries to note what prompted each change
+* Undo history entries to revert your suspension back to a previous state
+* Record serial numbers and product pages for your fork and shock
 * No cloud, no account required, no data sent anywhere — everything stays on your device

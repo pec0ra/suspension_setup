@@ -1,0 +1,4 @@
+• Possibilité de défaire des entrées de l'historique
+• Modifier les commentaires des entrées de l'historique
+• Enregistrer le numéro de série et la page produit de votre fourche et amortisseur
+• Prise en charge des valeurs décimales

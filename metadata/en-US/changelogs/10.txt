@@ -1,0 +1,4 @@
+• Add the option to undo history entries
+• Edit comments on history entries
+• Record serial numbers and product pages for your fork and shock
+• Decimal value support

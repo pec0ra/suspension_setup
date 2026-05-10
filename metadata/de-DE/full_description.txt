@@ -7,5 +7,7 @@ Funktionen:
 * Reifendruck für Vorder- und Hinterreifen verfolgen
 * Einzelne Felder je nach Federungskomponenten aktivieren oder deaktivieren
 * Vollständige Änderungshistorie: Jedes Mal, wenn aktualisierte Einstellungen gespeichert werden, werden die Änderungen mit Zeitstempel protokolliert
-* Kommentare zu Historieneinträgen hinzufügen, um den Grund jeder Änderung festzuhalten
+* Kommentare zu Historieneinträgen hinzufügen oder bearbeiten, um den Grund jeder Änderung festzuhalten
+* Historieneinträge rückgängig machen, um die Federung auf einen früheren Zustand zurückzusetzen
+* Seriennummer und Produktseite für Federgabel und Dämpfer speichern
 * Kein Cloud, kein Konto erforderlich, keine Daten werden übermittelt — alles bleibt auf dem Gerät

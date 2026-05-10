@@ -7,5 +7,7 @@ Fonctionnalités :
 * Suivez les pressions des pneus avant et arrière
 * Activez ou désactivez les champs individuellement selon vos composants
 * Historique complet des modifications : chaque sauvegarde est enregistrée avec une date et une heure
-* Ajoutez des commentaires aux entrées de l'historique pour noter ce qui a motivé chaque changement
+* Ajoutez ou modifiez les commentaires des entrées de l'historique pour noter ce qui a motivé chaque changement
+* Défaites des entrées de l'historique pour revenir à un réglage précédent
+* Enregistrez le numéro de série et la page produit de votre fourche et de votre amortisseur
 * Pas de cloud, aucun compte requis, aucune donnée envoyée — tout reste sur votre appareil
