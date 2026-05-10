@@ -15,6 +15,7 @@ Future<void> main() => integrationDriver(
           final bytes = (map['bytes'] as List<dynamic>).cast<int>();
           final file = File('screenshots/$name.png');
           await file.writeAsBytes(bytes);
+          // ignore: avoid_print
           print('Saved: ${file.path}');
         }
       },

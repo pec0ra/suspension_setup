@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:suspension_setup/models/SetupFormController.dart';
+import 'package:suspension_setup/models/setup_form_controller.dart';
 import 'package:suspension_setup/setting_tiles.dart';
 
 Widget _harness(GlobalKey<FormState> key, FieldFormController controller) {

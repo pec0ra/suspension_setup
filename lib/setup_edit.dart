@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/SetupFormController.dart';
+import 'models/setup_form_controller.dart';
 import 'models/field.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
