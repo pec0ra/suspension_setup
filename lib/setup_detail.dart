@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
 import 'setting_tiles.dart';
+import 'setup_actions.dart';
 import 'setup_edit.dart';
 import 'setup_storage_model.dart';
 import 'title_with_icon.dart';
@@ -196,21 +197,25 @@ class History extends StatelessWidget {
 
   final Setup setup;
 
-  String _changeText(SettingChange change, Setup setup) {
-    final String unit;
+  String _unit(SettingChange change, Setup setup) {
     if (change.suspensionType == SuspensionType.tyre) {
-      unit = (change.settingType == SettingType.frontTyrePressure
+      return (change.settingType == SettingType.frontTyrePressure
               ? setup.tyres.front?.unit
               : setup.tyres.rear?.unit) ??
+          Settings.defaultUnits[change.settingType] ??
           '';
-    } else {
-      final settings = change.suspensionType == SuspensionType.fork
-          ? setup.fork
-          : setup.shock;
-      unit = settings.fieldFor(change.settingType)?.unit ?? '';
     }
-    final label = change.settingType.label;
+    final settings = change.suspensionType == SuspensionType.fork
+        ? setup.fork
+        : setup.shock;
+    return settings.fieldFor(change.settingType)?.unit ??
+        Settings.defaultUnits[change.settingType] ??
+        '';
+  }
 
+  String _changeText(SettingChange change, Setup setup) {
+    final unit = _unit(change, setup);
+    final label = change.settingType.label;
     if (change.newEnabled == true) {
       return '$label: enabled (${change.newValue} $unit)'.trim();
     }
@@ -218,6 +223,179 @@ class History extends StatelessWidget {
       return '$label: disabled (was ${change.oldValue} $unit)'.trim();
     }
     return '$label: ${change.oldValue} → ${change.newValue} $unit'.trim();
+  }
+
+  IconData _iconFor(SuspensionType type) => switch (type) {
+        SuspensionType.fork => SuspensionIcons.fork,
+        SuspensionType.shock => SuspensionIcons.shock,
+        SuspensionType.tyre => SuspensionIcons.tyre,
+      };
+
+  Future<void> _performUndo(
+    BuildContext context,
+    SettingChanges historyEntry,
+    List<SettingChange> actualChanges,
+  ) async {
+    final newSetup = setup.copyMutable();
+    newSetup.applyChanges(actualChanges);
+
+    final originalComment = historyEntry.comment;
+    final String autoComment;
+    if (originalComment != null &&
+        originalComment.isNotEmpty &&
+        !historyEntry.isCreationEntry) {
+      autoComment = 'Undo: $originalComment';
+    } else {
+      autoComment =
+          'Undo: ${DateFormat.yMMMd().add_Hm().format(historyEntry.date)}';
+    }
+
+    newSetup.history.add(SettingChanges(
+      changes: actualChanges,
+      date: DateTime.now(),
+      comment: autoComment,
+    ));
+
+    await Provider.of<SetupStorageModel>(context, listen: false)
+        .upsertSetup(newSetup);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Changes undone'),
+      ),
+    );
+  }
+
+  void _handleUndo(BuildContext context, SettingChanges historyEntry) {
+    final actualChanges = setup.computeUndo(historyEntry);
+
+    if (actualChanges.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Nothing to undo — values are already at those settings'),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Undo change?'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('The following values will be reverted:'),
+              const SizedBox(height: 8),
+              for (final change in actualChanges)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: TextWithIcon(
+                    text: _changeText(change, setup),
+                    icon: _iconFor(change.suspensionType),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _performUndo(context, historyEntry, actualChanges);
+            },
+            child: const Text('Undo'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditCommentDialog(BuildContext context, SettingChanges entry) {
+    final controller = TextEditingController(text: entry.comment ?? '');
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit comment'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Add a comment'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newComment = controller.text.trim();
+              Navigator.pop(dialogContext);
+              final newSetup = setup.copyMutable();
+              final target = newSetup.history.firstWhere(
+                (e) => e.id == entry.id,
+              );
+              target.comment = newComment.isEmpty ? null : newComment;
+              await Provider.of<SetupStorageModel>(context, listen: false)
+                  .upsertSetup(newSetup);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ).then((_) => controller.dispose());
+  }
+
+  void _showHistoryItemSheet(BuildContext context, SettingChanges entry) {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(
+                DateFormat.yMMMd().add_Hm().format(entry.date),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              subtitle: (entry.comment != null && entry.comment!.isNotEmpty)
+                  ? Text(entry.comment!)
+                  : null,
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit comment'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showEditCommentDialog(context, entry);
+              },
+            ),
+            if (!entry.isCreationEntry)
+              ListTile(
+                leading: const Icon(Icons.undo),
+                title: const Text('Undo this change'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _handleUndo(context, entry);
+                },
+              ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -238,59 +416,60 @@ class History extends StatelessWidget {
               theme.colorScheme.surfaceContainerLow,
             ),
             clipBehavior: Clip.antiAliasWithSaveLayer,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  color: theme.colorScheme.secondary.withValues(alpha:0.08),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ListTile(
-                          title: Text(DateFormat.yMMMd()
-                              .add_Hm()
-                              .format(settingChange.date)),
-                        ),
-                        Divider(
-                          color: theme.colorScheme.secondary.withValues(alpha:0.3),
-                          height: 0,
-                        ),
-                        if (settingChange.comment != null &&
-                            settingChange.comment!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: 16,
-                              bottom: 12,
-                              top: 12,
-                            ),
-                            child: TextWithIcon(
-                              text: settingChange.comment!,
-                              icon: Icons.info_outline,
-                            ),
+            child: InkWell(
+              onTap: () => _showHistoryItemSheet(context, settingChange),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.08),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            title: Text(DateFormat.yMMMd()
+                                .add_Hm()
+                                .format(settingChange.date)),
                           ),
-                        Divider(
-                          color: theme.colorScheme.secondary.withValues(alpha:0.3),
-                          height: 0,
-                        ),
-                      ]),
-                ),
-                for (SettingChange change in settingChange.changes)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      bottom: 8,
-                      top: 8,
-                    ),
-                    child: TextWithIcon(
-                      text: _changeText(change, setup),
-                      icon: switch (change.suspensionType) {
-                        SuspensionType.fork => SuspensionIcons.fork,
-                        SuspensionType.shock => SuspensionIcons.shock,
-                        SuspensionType.tyre => SuspensionIcons.tyre,
-                      },
-                    ),
+                          Divider(
+                            color: theme.colorScheme.secondary
+                                .withValues(alpha: 0.3),
+                            height: 0,
+                          ),
+                          if (settingChange.comment != null &&
+                              settingChange.comment!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16,
+                                bottom: 12,
+                                top: 12,
+                              ),
+                              child: TextWithIcon(
+                                text: settingChange.comment!,
+                                icon: Icons.info_outline,
+                              ),
+                            ),
+                          Divider(
+                            color: theme.colorScheme.secondary
+                                .withValues(alpha: 0.3),
+                            height: 0,
+                          ),
+                        ]),
                   ),
-              ],
+                  for (SettingChange change in settingChange.changes)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        bottom: 8,
+                        top: 8,
+                      ),
+                      child: TextWithIcon(
+                        text: _changeText(change, setup),
+                        icon: _iconFor(change.suspensionType),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
       ],
@@ -298,113 +477,40 @@ class History extends StatelessWidget {
   }
 }
 
-class OverflowMenu extends StatefulWidget {
+class OverflowMenu extends StatelessWidget {
   const OverflowMenu({super.key, required this.setup});
 
   final Setup setup;
 
   @override
-  State<StatefulWidget> createState() => _OverflowMenuState();
-}
-
-class _OverflowMenuState extends State<OverflowMenu> {
-  bool _copyHistory = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return PopupMenuButton(
-        itemBuilder: (context) => [
-              PopupMenuItem(
-                onTap: () => duplicate(context),
-                child: const Row(
-                  spacing: 12,
-                  children: [
-                    Icon(Icons.copy),
-                    Text('Clone'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                onTap: () => delete(context),
-                child: const Row(
-                  spacing: 12,
-                  children: [
-                    Icon(Icons.delete),
-                    Text('Delete'),
-                  ],
-                ),
-              ),
-            ]);
-  }
-
-  void duplicate(BuildContext context) {
-    showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Duplicate Setup \'${widget.setup.name}\'?'),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) =>
-              CheckboxListTile(
-            value: _copyHistory,
-            title: const Text('Copy history'),
-            controlAffinity: ListTileControlAffinity.leading,
-            onChanged: (bool? value) {
-              setState(() {
-                _copyHistory = value ?? false;
-              });
-            },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          onTap: () => showCloneSetupDialog(context, setup,
+              onConfirm: (copyHistory) =>
+                  navigateToClone(context, setup, copyHistory, replace: true)),
+          child: const Row(
+            spacing: 12,
+            children: [Icon(Icons.copy), Text('Clone')],
           ),
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'Cancel'),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context, 'OK');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        SetupEdit(setup: widget.setup.clone(_copyHistory))),
-              );
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void delete(BuildContext context) {
-    showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Delete Setup \'${widget.setup.name}\'?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'Cancel'),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            onPressed: () async {
-              await Provider.of<SetupStorageModel>(context, listen: false)
-                  .deleteSetup(widget.setup);
+        PopupMenuItem(
+          onTap: () => showDeleteSetupDialog(
+            context,
+            setup,
+            Provider.of<SetupStorageModel>(context, listen: false),
+            onDeleted: () {
               if (!context.mounted) return;
-              Navigator.pop(context, 'OK');
               Navigator.pop(context);
             },
-            child: const Text('Delete'),
           ),
-        ],
-      ),
+          child: const Row(
+            spacing: 12,
+            children: [Icon(Icons.delete), Text('Delete')],
+          ),
+        ),
+      ],
     );
   }
 }

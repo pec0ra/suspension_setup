@@ -81,9 +81,8 @@ Future<void> _screenshot(
   await binding.takeScreenshot(name);
 }
 
-// demo.json data migrated to schema v2
 const _fixture = {
-  'schemaVersion': 2,
+  'schemaVersion': 3,
   'setups': {
     'a5f0c760-7346-11ef-89aa-5137c552c0bc': {
       'id': 'a5f0c760-7346-11ef-89aa-5137c552c0bc',
@@ -109,9 +108,11 @@ const _fixture = {
       'tyres': {'front': null, 'rear': null},
       'history': [
         {
+          'id': 'a5f0c760-7346-11ef-89aa-000000000001',
           'changes': [],
           'date': '2024-09-15T11:41:14.071433',
           'comment': 'Setup creation',
+          'isCreationEntry': true,
         },
       ],
     },
@@ -141,11 +142,14 @@ const _fixture = {
       'tyres': {'front': null, 'rear': null},
       'history': [
         {
+          'id': 'f65fdaf0-735b-11ef-8bca-000000000001',
           'changes': [],
           'date': '2024-09-15T14:13:48.447488',
           'comment': 'Setup creation',
+          'isCreationEntry': true,
         },
         {
+          'id': 'f65fdaf0-735b-11ef-8bca-000000000002',
           'changes': [
             {
               'suspensionType': 'shock',
@@ -168,6 +172,7 @@ const _fixture = {
           'comment': 'Less pressure, more compression',
         },
         {
+          'id': 'f65fdaf0-735b-11ef-8bca-000000000003',
           'changes': [
             {
               'suspensionType': 'fork',

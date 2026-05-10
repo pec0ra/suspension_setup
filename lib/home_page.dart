@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'error_screen.dart';
 import 'models/setup.dart';
+import 'setup_actions.dart';
 import 'setup_detail.dart';
 import 'setup_edit.dart';
 import 'setup_storage_model.dart';
@@ -137,8 +138,7 @@ class _HomePageState extends State<HomePage> {
                                 )),
                       );
                     },
-                    // TODO: add context menu in addition to dialog
-                    onLongPress: () => deleteSetup(context, setup, setupModel),
+                    onLongPress: () => _showSetupSheet(context, setup, setupModel),
                   ),
                 ),
             ],
@@ -155,35 +155,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _showSetupSheet(BuildContext context, Setup setup, SetupStorageModel setupModel) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(setup.name, style: theme.textTheme.titleMedium),
+              subtitle: setup.history.isNotEmpty
+                  ? Text(DateFormat.yMMMd().format(setup.history.last.date))
+                  : null,
+            ),
+            const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: const Text('Clone'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                showCloneSetupDialog(context, setup,
+                    onConfirm: (copyHistory) =>
+                        navigateToClone(context, setup, copyHistory));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: theme.colorScheme.error),
+              title: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                showDeleteSetupDialog(context, setup, setupModel);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void createSetup() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SetupEdit()),
-    );
-  }
-
-  Future<String?> deleteSetup(
-      BuildContext context, Setup setup, SetupStorageModel setupModel) {
-    return showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Delete Setup ${setup.name} ?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'Cancel'),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            onPressed: () async {
-              await setupModel.deleteSetup(setup);
-              if (!context.mounted) return;
-              Navigator.pop(context, 'OK');
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 

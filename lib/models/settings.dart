@@ -105,6 +105,28 @@ class Settings {
         SettingType.frontTyrePressure || SettingType.rearTyrePressure => null,
       };
 
+  void setField(SettingType type, Field? value) {
+    switch (type) {
+      case SettingType.airPressure:
+        airPressure = value;
+      case SettingType.sag:
+        sag = value;
+      case SettingType.volumeSpacer:
+        volumeSpacer = value;
+      case SettingType.lsc:
+        lsc = value;
+      case SettingType.hsc:
+        hsc = value;
+      case SettingType.lsr:
+        lsr = value;
+      case SettingType.hsr:
+        hsr = value;
+      case SettingType.frontTyrePressure:
+      case SettingType.rearTyrePressure:
+        break;
+    }
+  }
+
   Settings clone() {
     return Settings(
       airPressure: airPressure,
