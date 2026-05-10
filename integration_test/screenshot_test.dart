@@ -17,6 +17,11 @@ void main() {
     app.main();
     await tester.pumpAndSettle();
 
+    if (Platform.isAndroid) {
+      await binding.convertFlutterSurfaceToImage();
+      await tester.pumpAndSettle();
+    }
+
     await _screenshot(binding, tester, '01_home');
 
     await tester.tap(find.text('Yeti'));
@@ -43,8 +48,10 @@ Future<void> _screenshot(
   String name,
 ) async {
   if (!Platform.isIOS && !Platform.isAndroid) return;
-  await binding.convertFlutterSurfaceToImage();
-  await tester.pumpAndSettle();
+  if (Platform.isIOS) {
+    await binding.convertFlutterSurfaceToImage();
+    await tester.pumpAndSettle();
+  }
   await binding.takeScreenshot(name);
 }
 
