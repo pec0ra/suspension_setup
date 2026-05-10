@@ -24,28 +24,48 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    await _screenshot(binding, tester, '01_home');
+    await _takeScreenshots(binding, tester, '_light');
 
-    tester.widget<ListTile>(
-      find.ancestor(of: find.text('Yeti'), matching: find.byType(ListTile)),
-    ).onTap!();
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     await tester.pumpAndSettle();
-    await _screenshot(binding, tester, '02_detail');
 
-    await Scrollable.ensureVisible(
-      tester.element(find.text('History')),
-      alignment: 0.0,
-      duration: Duration.zero,
-    );
-    await tester.pumpAndSettle();
-    await _screenshot(binding, tester, '03_history');
-
-    tester.widget<IconButton>(
-      find.ancestor(of: find.byIcon(Icons.edit), matching: find.byType(IconButton)),
-    ).onPressed!();
-    await tester.pumpAndSettle();
-    await _screenshot(binding, tester, '04_edit');
+    await _takeScreenshots(binding, tester, '_dark', baseIndex: 5);
   });
+}
+
+Future<void> _takeScreenshots(
+  IntegrationTestWidgetsFlutterBinding binding,
+  WidgetTester tester,
+  String suffix, {
+  int baseIndex = 1,
+}) async {
+  String idx(int offset) => (baseIndex + offset).toString().padLeft(2, '0');
+
+  await _screenshot(binding, tester, '${idx(0)}_home$suffix');
+
+  tester.widget<ListTile>(
+    find.ancestor(of: find.text('Yeti'), matching: find.byType(ListTile)),
+  ).onTap!();
+  await tester.pumpAndSettle();
+  await _screenshot(binding, tester, '${idx(1)}_detail$suffix');
+
+  await Scrollable.ensureVisible(
+    tester.element(find.text('History')),
+    alignment: 0.0,
+    duration: Duration.zero,
+  );
+  await tester.pumpAndSettle();
+  await _screenshot(binding, tester, '${idx(2)}_history$suffix');
+
+  tester.widget<IconButton>(
+    find.ancestor(of: find.byIcon(Icons.edit), matching: find.byType(IconButton)),
+  ).onPressed!();
+  await tester.pumpAndSettle();
+  await _screenshot(binding, tester, '${idx(3)}_edit$suffix');
+
+  tester.state<NavigatorState>(find.byType(Navigator).first)
+      .popUntil((route) => route.isFirst);
+  await tester.pumpAndSettle();
 }
 
 Future<void> _screenshot(
