@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
 import 'setting_tiles.dart';
+import 'setup_actions.dart';
 import 'setup_edit.dart';
 import 'setup_storage_model.dart';
 import 'title_with_icon.dart';
@@ -476,113 +477,40 @@ class History extends StatelessWidget {
   }
 }
 
-class OverflowMenu extends StatefulWidget {
+class OverflowMenu extends StatelessWidget {
   const OverflowMenu({super.key, required this.setup});
 
   final Setup setup;
 
   @override
-  State<StatefulWidget> createState() => _OverflowMenuState();
-}
-
-class _OverflowMenuState extends State<OverflowMenu> {
-  bool _copyHistory = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return PopupMenuButton(
-        itemBuilder: (context) => [
-              PopupMenuItem(
-                onTap: () => duplicate(context),
-                child: const Row(
-                  spacing: 12,
-                  children: [
-                    Icon(Icons.copy),
-                    Text('Clone'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                onTap: () => delete(context),
-                child: const Row(
-                  spacing: 12,
-                  children: [
-                    Icon(Icons.delete),
-                    Text('Delete'),
-                  ],
-                ),
-              ),
-            ]);
-  }
-
-  void duplicate(BuildContext context) {
-    showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Duplicate Setup \'${widget.setup.name}\'?'),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) =>
-              CheckboxListTile(
-            value: _copyHistory,
-            title: const Text('Copy history'),
-            controlAffinity: ListTileControlAffinity.leading,
-            onChanged: (bool? value) {
-              setState(() {
-                _copyHistory = value ?? false;
-              });
-            },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          onTap: () => showCloneSetupDialog(context, setup,
+              onConfirm: (copyHistory) =>
+                  navigateToClone(context, setup, copyHistory, replace: true)),
+          child: const Row(
+            spacing: 12,
+            children: [Icon(Icons.copy), Text('Clone')],
           ),
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'Cancel'),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context, 'OK');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        SetupEdit(setup: widget.setup.clone(_copyHistory))),
-              );
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void delete(BuildContext context) {
-    showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Delete Setup \'${widget.setup.name}\'?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'Cancel'),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            onPressed: () async {
-              await Provider.of<SetupStorageModel>(context, listen: false)
-                  .deleteSetup(widget.setup);
+        PopupMenuItem(
+          onTap: () => showDeleteSetupDialog(
+            context,
+            setup,
+            Provider.of<SetupStorageModel>(context, listen: false),
+            onDeleted: () {
               if (!context.mounted) return;
-              Navigator.pop(context, 'OK');
               Navigator.pop(context);
             },
-            child: const Text('Delete'),
           ),
-        ],
-      ),
+          child: const Row(
+            spacing: 12,
+            children: [Icon(Icons.delete), Text('Delete')],
+          ),
+        ),
+      ],
     );
   }
 }
