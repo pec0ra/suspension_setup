@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +19,7 @@ void main() {
     await tester.pumpAndSettle();
 
     if (Platform.isAndroid) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       await binding.convertFlutterSurfaceToImage();
       await tester.pumpAndSettle();
     }
@@ -50,8 +52,8 @@ Future<void> _screenshot(
   if (!Platform.isIOS && !Platform.isAndroid) return;
   if (Platform.isIOS) {
     await binding.convertFlutterSurfaceToImage();
-    await tester.pumpAndSettle();
   }
+  await tester.pumpAndSettle();
   await binding.takeScreenshot(name);
 }
 
