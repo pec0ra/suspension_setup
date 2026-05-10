@@ -82,8 +82,12 @@ class _SetupEditState extends State<SetupEdit> {
       if (settingChanges.changes.isNotEmpty) {
         newSetup.history.add(settingChanges);
       } else if (widget.setup == null || widget.setup!.history.isEmpty) {
-        settingChanges.comment = SettingChanges.defaultComment;
-        newSetup.history.add(settingChanges);
+        newSetup.history.add(SettingChanges(
+          changes: [],
+          date: settingChanges.date,
+          comment: 'Setup creation',
+          isCreationEntry: true,
+        ));
       }
       newSetup.name = _setupFormController.name.text;
 

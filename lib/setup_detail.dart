@@ -242,7 +242,7 @@ class History extends StatelessWidget {
     final String autoComment;
     if (originalComment != null &&
         originalComment.isNotEmpty &&
-        originalComment != SettingChanges.defaultComment) {
+        !historyEntry.isCreationEntry) {
       autoComment = 'Undo: $originalComment';
     } else {
       autoComment =
@@ -321,8 +321,42 @@ class History extends StatelessWidget {
     );
   }
 
+  void _showEditCommentDialog(BuildContext context, SettingChanges entry) {
+    final controller = TextEditingController(text: entry.comment ?? '');
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit comment'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Add a comment'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newComment = controller.text.trim();
+              Navigator.pop(dialogContext);
+              final newSetup = setup.copyMutable();
+              final target = newSetup.history.firstWhere(
+                (e) => e.date == entry.date,
+              );
+              target.comment = newComment.isEmpty ? null : newComment;
+              await Provider.of<SetupStorageModel>(context, listen: false)
+                  .upsertSetup(newSetup);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showHistoryItemSheet(BuildContext context, SettingChanges entry) {
-    final isSetupCreation = entry.comment == SettingChanges.defaultComment;
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
@@ -340,7 +374,15 @@ class History extends StatelessWidget {
                   : null,
             ),
             const Divider(height: 0),
-            if (!isSetupCreation)
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit comment'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showEditCommentDialog(context, entry);
+              },
+            ),
+            if (!entry.isCreationEntry)
               ListTile(
                 leading: const Icon(Icons.undo),
                 title: const Text('Undo this change'),

@@ -243,7 +243,8 @@ void main() {
           SettingChanges(
             changes: [],
             date: DateTime.utc(2024, 1, 1),
-            comment: SettingChanges.defaultComment,
+            comment: 'Setup creation',
+            isCreationEntry: true,
           ),
         ],
       );
@@ -255,7 +256,8 @@ void main() {
       expect(restored.fork.hsr, isNull);
       expect(restored.shock.sag?.value, 30);
       expect(restored.history, hasLength(1));
-      expect(restored.history.first.comment, SettingChanges.defaultComment);
+      expect(restored.history.first.comment, 'Setup creation');
+      expect(restored.history.first.isCreationEntry, isTrue);
     });
 
     test('clone with history produces independent copy with new id', () {

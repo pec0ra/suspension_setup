@@ -2,13 +2,13 @@ class SettingChanges {
   final List<SettingChange> changes;
   final DateTime date;
   String? comment;
-
-  static const String defaultComment = 'Setup creation';
+  final bool isCreationEntry;
 
   SettingChanges({
     required this.changes,
     required this.date,
     this.comment,
+    this.isCreationEntry = false,
   });
 
   factory SettingChanges.fromJson(Map<String, dynamic> json) {
@@ -17,6 +17,7 @@ class SettingChanges {
           json['changes'].map((c) => SettingChange.fromJson(c))),
       date: DateTime.parse((json['date'])),
       comment: (json['comment']),
+      isCreationEntry: json['isCreationEntry'] as bool? ?? false,
     );
   }
 
@@ -25,6 +26,7 @@ class SettingChanges {
       'changes': changes.map((c) => c.toJson()).toList(),
       'date': date.toIso8601String(),
       'comment': comment,
+      'isCreationEntry': isCreationEntry,
     };
   }
 
@@ -33,6 +35,7 @@ class SettingChanges {
       changes: changes.map((e) => e.clone()).toList(),
       date: date,
       comment: comment,
+      isCreationEntry: isCreationEntry,
     );
   }
 }
