@@ -95,6 +95,15 @@ class Settings {
       serialNumber != null ||
       infoUrl != null;
 
+  bool get hasAnyValueField =>
+      airPressure != null ||
+      volumeSpacer != null ||
+      sag != null ||
+      lsr != null ||
+      hsr != null ||
+      lsc != null ||
+      hsc != null;
+
   Field? fieldFor(SettingType type) => switch (type) {
         SettingType.airPressure => airPressure,
         SettingType.sag => sag,

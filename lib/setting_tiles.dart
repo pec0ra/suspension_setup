@@ -8,44 +8,12 @@ import 'models/settings.dart';
 import 'models/tyres.dart';
 
 class SettingTiles extends StatelessWidget {
-  const SettingTiles({
-    super.key,
-    this.settings,
-    this.settingsFormController,
-  });
+  const SettingTiles({super.key, required this.settings});
 
-  final Settings? settings;
-  final SettingsFormController? settingsFormController;
+  final Settings settings;
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = settingsFormController;
-    if (ctrl != null) {
-      return _buildEditMode(ctrl);
-    }
-    final s = settings;
-    if (s != null) {
-      return _buildViewMode(s);
-    }
-    return const SizedBox.shrink();
-  }
-
-  Widget _buildEditMode(SettingsFormController ctrl) {
-    return Column(
-      children: [
-        FieldEditCard(
-            name: SettingType.airPressure.label, controller: ctrl.airPressure),
-        FieldEditCard(name: SettingType.sag.label, controller: ctrl.sag),
-        FieldEditCard(name: 'Volume Spacers', controller: ctrl.volumeSpacer),
-        FieldEditCard(name: SettingType.lsc.label, controller: ctrl.lsc),
-        FieldEditCard(name: SettingType.hsc.label, controller: ctrl.hsc),
-        FieldEditCard(name: SettingType.lsr.label, controller: ctrl.lsr),
-        FieldEditCard(name: SettingType.hsr.label, controller: ctrl.hsr),
-      ],
-    );
-  }
-
-  Widget _buildViewMode(Settings s) {
     Widget group(List<({String name, Field? field})> specs) {
       final enabled = specs.where((e) => e.field != null).toList();
       if (enabled.isEmpty) return const SizedBox.shrink();
@@ -61,17 +29,17 @@ class SettingTiles extends StatelessWidget {
     return Column(
       children: [
         group([
-          (name: SettingType.airPressure.label, field: s.airPressure),
-          (name: SettingType.sag.label, field: s.sag),
-          (name: 'Volume', field: s.volumeSpacer),
+          (name: SettingType.airPressure.label, field: settings.airPressure),
+          (name: SettingType.sag.label, field: settings.sag),
+          (name: SettingType.volumeSpacer.label, field: settings.volumeSpacer),
         ]),
         group([
-          (name: SettingType.lsc.label, field: s.lsc),
-          (name: SettingType.hsc.label, field: s.hsc),
+          (name: SettingType.lsc.label, field: settings.lsc),
+          (name: SettingType.hsc.label, field: settings.hsc),
         ]),
         group([
-          (name: SettingType.lsr.label, field: s.lsr),
-          (name: SettingType.hsr.label, field: s.hsr),
+          (name: SettingType.lsr.label, field: settings.lsr),
+          (name: SettingType.hsr.label, field: settings.hsr),
         ]),
       ],
     );
@@ -79,43 +47,15 @@ class SettingTiles extends StatelessWidget {
 }
 
 class TyreTiles extends StatelessWidget {
-  const TyreTiles({
-    super.key,
-    this.tyres,
-    this.tyresFormController,
-  });
+  const TyreTiles({super.key, required this.tyres});
 
-  final Tyres? tyres;
-  final TyresFormController? tyresFormController;
+  final Tyres tyres;
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = tyresFormController;
-    if (ctrl != null) {
-      return _buildEditMode(ctrl);
-    }
-    final t = tyres;
-    if (t != null) {
-      return _buildViewMode(t);
-    }
-    return const SizedBox.shrink();
-  }
-
-  Widget _buildEditMode(TyresFormController ctrl) {
-    return Column(
-      children: [
-        FieldEditCard(
-            name: SettingType.frontTyrePressure.label, controller: ctrl.front),
-        FieldEditCard(
-            name: SettingType.rearTyrePressure.label, controller: ctrl.rear),
-      ],
-    );
-  }
-
-  Widget _buildViewMode(Tyres t) {
     final enabled = [
-      (name: SettingType.frontTyrePressure.label, field: t.front),
-      (name: SettingType.rearTyrePressure.label, field: t.rear),
+      (name: SettingType.frontTyrePressure.label, field: tyres.front),
+      (name: SettingType.rearTyrePressure.label, field: tyres.rear),
     ].where((e) => e.field != null).toList();
     if (enabled.isEmpty) return const SizedBox.shrink();
     return Row(
@@ -166,8 +106,8 @@ class SettingTile extends StatelessWidget {
   }
 }
 
-class FieldEditCard extends StatelessWidget {
-  const FieldEditCard({
+class FieldConfigCard extends StatelessWidget {
+  const FieldConfigCard({
     super.key,
     required this.name,
     required this.controller,
@@ -201,52 +141,69 @@ class FieldEditCard extends StatelessWidget {
               if (enabled)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          style: theme.textTheme.bodyLarge,
-                          decoration: InputDecoration(
-                            labelText: 'Value',
-                            labelStyle: theme.textTheme.bodySmall,
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              signed: true, decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[0-9.\-]')),
-                          ],
-                          controller: controller.value,
-                          validator: (v) {
-                            if (!controller.enabled.value) return null;
-                            if (v == null || v.isEmpty) {
-                              return 'Value required';
-                            }
-                            if (num.tryParse(v) == null) {
-                              return 'Invalid number';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextField(
-                          style: theme.textTheme.bodyLarge,
-                          decoration: InputDecoration(
-                            labelText: 'Unit',
-                            labelStyle: theme.textTheme.bodySmall,
-                          ),
-                          controller: controller.unit,
-                        ),
-                      ),
-                    ],
+                  child: TextField(
+                    style: theme.textTheme.bodyLarge,
+                    decoration: InputDecoration(
+                      labelText: 'Unit',
+                      labelStyle: theme.textTheme.bodySmall,
+                    ),
+                    controller: controller.unit,
                   ),
                 ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class FieldValueCard extends StatelessWidget {
+  const FieldValueCard({
+    super.key,
+    required this.name,
+    required this.controller,
+  });
+
+  final String name;
+  final FieldFormController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final unit = controller.unit.text;
+    return Column(
+      children: [
+        Text(
+          name,
+          style: theme.textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+        TextFormField(
+          textAlign: TextAlign.center,
+          style: theme.textTheme.headlineSmall,
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 4),
+            helperText: unit.isEmpty ? null : unit,
+            helperStyle: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            helperMaxLines: 1,
+            errorStyle: theme.textTheme.bodySmall,
+          ),
+          keyboardType: const TextInputType.numberWithOptions(
+              signed: true, decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
+          ],
+          controller: controller.value,
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Value required';
+            if (num.tryParse(v) == null) return 'Invalid number';
+            return null;
+          },
+        ),
+      ],
     );
   }
 }
