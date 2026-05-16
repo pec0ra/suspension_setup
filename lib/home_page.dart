@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'error_screen.dart';
+import 'setup_file_utils.dart';
 import 'models/setup.dart';
 import 'setup_actions.dart';
 import 'setup_detail.dart';
@@ -76,8 +77,8 @@ class _HomePageState extends State<HomePage> {
         builder: (context, setupModel, child) {
           if (setupModel.loadError != null) {
             return ErrorScreenWidget(
-              title: 'Error',
               message: setupModel.loadError!,
+              onRestore: () => _restore(context),
             );
           }
           var setupList = setupModel.getSetupList();
@@ -241,10 +242,22 @@ class _HomePageState extends State<HomePage> {
     if (confirmed != true) return;
     if (!context.mounted) return;
 
-    await model.restoreFromFile(filePath);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Setups restored successfully')),
-    );
+    try {
+      await model.restoreFromFile(filePath);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Setups restored successfully')),
+      );
+    } on SetupLoadException catch (e) {
+      if (!context.mounted) return;
+      final colors = Theme.of(context).colorScheme;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: colors.errorContainer,
+          content: Text(e.message, style: TextStyle(color: colors.onErrorContainer)),
+        ),
+      );
+    }
   }
 }

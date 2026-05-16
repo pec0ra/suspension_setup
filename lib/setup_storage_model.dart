@@ -83,6 +83,7 @@ class SetupStorageModel extends ChangeNotifier {
         ..addAll(setupsFromFile);
       await SetupFileUtil.writeSetups(
           _setupMap, await SetupFileUtil.defaultLocalFilePath);
+      loadError = null;
       notifyListeners();
     }
   }

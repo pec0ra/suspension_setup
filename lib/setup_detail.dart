@@ -29,8 +29,7 @@ class SetupDetail extends StatelessWidget {
       var setup = setupModel.getSetup(setupId);
       if (setup == null) {
         return const ErrorScreenWidget(
-            title: 'Setup not found',
-            message: 'The setup requested does not exist');
+            message: 'Setup not found');
       } else {
         return Scaffold(
           appBar: AppBar(
