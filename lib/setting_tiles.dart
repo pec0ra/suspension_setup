@@ -33,7 +33,8 @@ class SettingTiles extends StatelessWidget {
   Widget _buildEditMode(SettingsFormController ctrl) {
     return Column(
       children: [
-        FieldEditCard(name: SettingType.airPressure.label, controller: ctrl.airPressure),
+        FieldEditCard(
+            name: SettingType.airPressure.label, controller: ctrl.airPressure),
         FieldEditCard(name: SettingType.sag.label, controller: ctrl.sag),
         FieldEditCard(name: 'Volume Spacers', controller: ctrl.volumeSpacer),
         FieldEditCard(name: SettingType.lsc.label, controller: ctrl.lsc),
@@ -51,7 +52,8 @@ class SettingTiles extends StatelessWidget {
       return Row(
         children: [
           for (final e in enabled)
-            SettingTile(name: e.name, value: e.field!.value, unit: e.field!.unit),
+            SettingTile(
+                name: e.name, value: e.field!.value, unit: e.field!.unit),
         ],
       );
     }
@@ -147,9 +149,15 @@ class SettingTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           child: Column(
             children: [
-              Text(name, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
-              Text(value.toString(), style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
-              Text(unit, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+              Text(name,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+              Text(value.toString(),
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+              Text(unit,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
             ],
           ),
         ),
@@ -194,46 +202,46 @@ class FieldEditCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            style: theme.textTheme.bodyLarge,
-                            decoration: InputDecoration(
-                              labelText: 'Value',
-                              labelStyle: theme.textTheme.bodySmall,
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                signed: true, decimal: true),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9.\-]')),
-                            ],
-                            controller: controller.value,
-                            validator: (v) {
-                              if (!controller.enabled.value) return null;
-                              if (v == null || v.isEmpty) {
-                                return 'Value required';
-                              }
-                              if (num.tryParse(v) == null) {
-                                return 'Invalid number';
-                              }
-                              return null;
-                            },
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          style: theme.textTheme.bodyLarge,
+                          decoration: InputDecoration(
+                            labelText: 'Value',
+                            labelStyle: theme.textTheme.bodySmall,
                           ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              signed: true, decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[0-9.\-]')),
+                          ],
+                          controller: controller.value,
+                          validator: (v) {
+                            if (!controller.enabled.value) return null;
+                            if (v == null || v.isEmpty) {
+                              return 'Value required';
+                            }
+                            if (num.tryParse(v) == null) {
+                              return 'Invalid number';
+                            }
+                            return null;
+                          },
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            style: theme.textTheme.bodyLarge,
-                            decoration: InputDecoration(
-                              labelText: 'Unit',
-                              labelStyle: theme.textTheme.bodySmall,
-                            ),
-                            controller: controller.unit,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          style: theme.textTheme.bodyLarge,
+                          decoration: InputDecoration(
+                            labelText: 'Unit',
+                            labelStyle: theme.textTheme.bodySmall,
                           ),
+                          controller: controller.unit,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),

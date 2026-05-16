@@ -5,8 +5,24 @@ Map<String, dynamic> _v1Data() => {
       'id-1': {
         'id': 'id-1',
         'name': 'Test',
-        'fork': {'airPressure': 100, 'sag': 25, 'lsc': 8, 'lsr': 6, 'volumeSpacer': null, 'hsc': null, 'hsr': null},
-        'shock': {'airPressure': 180, 'sag': 30, 'lsc': 5, 'lsr': 4, 'volumeSpacer': null, 'hsc': null, 'hsr': null},
+        'fork': {
+          'airPressure': 100,
+          'sag': 25,
+          'lsc': 8,
+          'lsr': 6,
+          'volumeSpacer': null,
+          'hsc': null,
+          'hsr': null
+        },
+        'shock': {
+          'airPressure': 180,
+          'sag': 30,
+          'lsc': 5,
+          'lsr': 4,
+          'volumeSpacer': null,
+          'hsc': null,
+          'hsr': null
+        },
         'history': [],
       },
     };
@@ -51,7 +67,12 @@ Map<String, dynamic> _v3Data() => {
           },
           'shock': {},
           'history': [
-            {'changes': [], 'date': '2024-01-01T00:00:00.000Z', 'comment': 'Setup creation', 'isCreationEntry': true},
+            {
+              'changes': [],
+              'date': '2024-01-01T00:00:00.000Z',
+              'comment': 'Setup creation',
+              'isCreationEntry': true
+            },
           ],
         },
       },
@@ -89,8 +110,16 @@ void main() {
 
     test('v2 to v3 sets isCreationEntry on first history entry', () {
       final v2 = _v2Data(history: [
-        {'changes': [], 'date': '2024-01-01T00:00:00.000Z', 'comment': 'Setup creation'},
-        {'changes': [], 'date': '2024-01-02T00:00:00.000Z', 'comment': 'Rebound tweak'},
+        {
+          'changes': [],
+          'date': '2024-01-01T00:00:00.000Z',
+          'comment': 'Setup creation'
+        },
+        {
+          'changes': [],
+          'date': '2024-01-02T00:00:00.000Z',
+          'comment': 'Rebound tweak'
+        },
       ]);
       final result = migrateIfNeeded(v2);
       final history = result['setups']['id-1']['history'] as List;
@@ -105,7 +134,11 @@ void main() {
     });
 
     test('returns future schema version data unchanged', () {
-      final futureData = {'schemaVersion': 99, 'setups': {}, 'someNewKey': true};
+      final futureData = {
+        'schemaVersion': 99,
+        'setups': {},
+        'someNewKey': true
+      };
       final result = migrateIfNeeded(futureData);
       expect(result['schemaVersion'], 99);
       expect(result['someNewKey'], true);

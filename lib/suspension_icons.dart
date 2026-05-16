@@ -10,7 +10,10 @@ class SuspensionIcons {
   static const _kFontFam = 'SuspensionIcons';
   static const String? _kFontPkg = null;
 
-  static const IconData fork = IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData shock = IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
-  static const IconData tyre = IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData fork =
+      IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData shock =
+      IconData(0xe801, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData tyre =
+      IconData(0xe803, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

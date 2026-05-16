@@ -38,7 +38,10 @@ void main() {
     });
 
     test('preserves setups map key', () {
-      final result = migrateV2ToV3({'schemaVersion': 2, 'setups': {'my-id': _v2Setup(id: 'my-id')}});
+      final result = migrateV2ToV3({
+        'schemaVersion': 2,
+        'setups': {'my-id': _v2Setup(id: 'my-id')}
+      });
       expect(result['setups'], contains('my-id'));
     });
 
@@ -126,20 +129,27 @@ void main() {
 
   group('migrateV2ToV3 — preserves history entry fields', () {
     test('preserves date on first entry', () {
-      final data = _v2Data(_v2Setup(history: [_v2History(date: '2024-06-15T10:30:00.000Z')]));
+      final data = _v2Data(
+          _v2Setup(history: [_v2History(date: '2024-06-15T10:30:00.000Z')]));
       final entry = migrateV2ToV3(data)['setups']['id-1']['history'][0];
       expect(entry['date'], '2024-06-15T10:30:00.000Z');
     });
 
     test('preserves comment on first entry', () {
-      final data = _v2Data(_v2Setup(history: [_v2History(comment: 'Setup creation')]));
+      final data =
+          _v2Data(_v2Setup(history: [_v2History(comment: 'Setup creation')]));
       final entry = migrateV2ToV3(data)['setups']['id-1']['history'][0];
       expect(entry['comment'], 'Setup creation');
     });
 
     test('preserves changes list on first entry', () {
       final changes = [
-        {'settingType': 'airPressure', 'suspensionType': 'fork', 'oldValue': 100, 'newValue': 110},
+        {
+          'settingType': 'airPressure',
+          'suspensionType': 'fork',
+          'oldValue': 100,
+          'newValue': 110
+        },
       ];
       final data = _v2Data(_v2Setup(history: [_v2History(changes: changes)]));
       final entry = migrateV2ToV3(data)['setups']['id-1']['history'][0];

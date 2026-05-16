@@ -71,7 +71,11 @@ void main() {
 
     test('preserves history entries unchanged', () {
       final history = [
-        {'date': '2024-01-01T00:00:00.000Z', 'changes': [], 'comment': 'initial'},
+        {
+          'date': '2024-01-01T00:00:00.000Z',
+          'changes': [],
+          'comment': 'initial'
+        },
       ];
       final data = {'id-1': _v1Setup(history: history)};
       final setup = migrateV1ToV2(data)['setups']['id-1'];
@@ -137,7 +141,15 @@ void main() {
         ),
       };
       final fork = migrateV1ToV2(data)['setups']['id-1']['fork'];
-      for (final key in ['airPressure', 'sag', 'lsc', 'lsr', 'hsc', 'hsr', 'volumeSpacer']) {
+      for (final key in [
+        'airPressure',
+        'sag',
+        'lsc',
+        'lsr',
+        'hsc',
+        'hsr',
+        'volumeSpacer'
+      ]) {
         expect(fork[key], isNull, reason: '$key should be null');
       }
     });
@@ -164,7 +176,8 @@ void main() {
     });
 
     test('airPressure unit is PSI', () {
-      expect(fork['airPressure']['unit'], Settings.defaultUnits[SettingType.airPressure]);
+      expect(fork['airPressure']['unit'],
+          Settings.defaultUnits[SettingType.airPressure]);
     });
 
     test('sag unit is %', () {
@@ -172,7 +185,8 @@ void main() {
     });
 
     test('volumeSpacer unit is Spacers', () {
-      expect(fork['volumeSpacer']['unit'], Settings.defaultUnits[SettingType.volumeSpacer]);
+      expect(fork['volumeSpacer']['unit'],
+          Settings.defaultUnits[SettingType.volumeSpacer]);
     });
 
     test('lsc unit is Clicks', () {

@@ -12,7 +12,7 @@ import 'package:suspension_setup/setup_file_utils.dart';
 
 class SetupStorageModel extends ChangeNotifier {
   final Map<String, Setup> _setupMap = {};
-  String? loadError;
+  SetupLoadException? loadError;
 
   UnmodifiableListView<Setup> getSetupList() {
     return UnmodifiableListView(_setupMap.values);
@@ -31,7 +31,7 @@ class SetupStorageModel extends ChangeNotifier {
         _setupMap.addAll(setupsFromFile);
       }
     } on SetupLoadException catch (e) {
-      loadError = e.message;
+      loadError = e;
     }
     notifyListeners();
   }
@@ -55,10 +55,9 @@ class SetupStorageModel extends ChangeNotifier {
     var fileName = "suspension-setup-$date.json";
     Uint8List fileContent = utf8.encode(SetupFileUtil.encodeSetups(_setupMap));
     String? outputFile = await FilePicker.saveFile(
-      dialogTitle: 'Please select a backup file:',
-      fileName: fileName,
-      bytes: fileContent
-    );
+        dialogTitle: 'Please select a backup file:',
+        fileName: fileName,
+        bytes: fileContent);
 
     if (outputFile == null) {
       return false;
@@ -71,7 +70,8 @@ class SetupStorageModel extends ChangeNotifier {
   }
 
   Future<String?> pickBackupFile() async {
-    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+    final result = await FilePicker.pickFiles(
+        type: FileType.custom, allowedExtensions: ['json']);
     return result?.files.single.path;
   }
 

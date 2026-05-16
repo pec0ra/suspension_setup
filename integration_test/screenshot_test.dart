@@ -43,9 +43,11 @@ Future<void> _takeScreenshots(
 
   await _screenshot(binding, tester, '${idx(0)}_home$suffix');
 
-  tester.widget<ListTile>(
-    find.ancestor(of: find.text('Yeti'), matching: find.byType(ListTile)),
-  ).onTap!();
+  tester
+      .widget<ListTile>(
+        find.ancestor(of: find.text('Yeti'), matching: find.byType(ListTile)),
+      )
+      .onTap!();
   await tester.pumpAndSettle();
   await _screenshot(binding, tester, '${idx(1)}_detail$suffix');
 
@@ -57,13 +59,17 @@ Future<void> _takeScreenshots(
   await tester.pumpAndSettle();
   await _screenshot(binding, tester, '${idx(2)}_history$suffix');
 
-  tester.widget<IconButton>(
-    find.ancestor(of: find.byIcon(Icons.edit), matching: find.byType(IconButton)),
-  ).onPressed!();
+  tester
+      .widget<IconButton>(
+        find.ancestor(
+            of: find.byIcon(Icons.edit), matching: find.byType(IconButton)),
+      )
+      .onPressed!();
   await tester.pumpAndSettle();
   await _screenshot(binding, tester, '${idx(3)}_edit$suffix');
 
-  tester.state<NavigatorState>(find.byType(Navigator).first)
+  tester
+      .state<NavigatorState>(find.byType(Navigator).first)
       .popUntil((route) => route.isFirst);
   await tester.pumpAndSettle();
 }

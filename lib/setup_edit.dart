@@ -74,9 +74,11 @@ class _SetupEditState extends State<SetupEdit> {
         return t.isEmpty ? null : t;
       }
 
-      newSetup.fork.serialNumber = trimmed(_setupFormController.fork.serialNumber);
+      newSetup.fork.serialNumber =
+          trimmed(_setupFormController.fork.serialNumber);
       newSetup.fork.infoUrl = trimmed(_setupFormController.fork.infoUrl);
-      newSetup.shock.serialNumber = trimmed(_setupFormController.shock.serialNumber);
+      newSetup.shock.serialNumber =
+          trimmed(_setupFormController.shock.serialNumber);
       newSetup.shock.infoUrl = trimmed(_setupFormController.shock.infoUrl);
 
       if (settingChanges.changes.isNotEmpty) {
@@ -135,7 +137,9 @@ class _SetupEditState extends State<SetupEdit> {
     if (!context.mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Setup saved successfully')),
+      const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Setup saved successfully')),
     );
   }
 
@@ -181,18 +185,18 @@ class _SetupEditState extends State<SetupEdit> {
 
     applyField(SettingType.airPressure, oldSettings?.airPressure,
         controller.airPressure, (f) => newSettings.airPressure = f);
-    applyField(SettingType.sag, oldSettings?.sag,
-        controller.sag, (f) => newSettings.sag = f);
+    applyField(SettingType.sag, oldSettings?.sag, controller.sag,
+        (f) => newSettings.sag = f);
     applyField(SettingType.volumeSpacer, oldSettings?.volumeSpacer,
         controller.volumeSpacer, (f) => newSettings.volumeSpacer = f);
-    applyField(SettingType.lsc, oldSettings?.lsc,
-        controller.lsc, (f) => newSettings.lsc = f);
-    applyField(SettingType.hsc, oldSettings?.hsc,
-        controller.hsc, (f) => newSettings.hsc = f);
-    applyField(SettingType.lsr, oldSettings?.lsr,
-        controller.lsr, (f) => newSettings.lsr = f);
-    applyField(SettingType.hsr, oldSettings?.hsr,
-        controller.hsr, (f) => newSettings.hsr = f);
+    applyField(SettingType.lsc, oldSettings?.lsc, controller.lsc,
+        (f) => newSettings.lsc = f);
+    applyField(SettingType.hsc, oldSettings?.hsc, controller.hsc,
+        (f) => newSettings.hsc = f);
+    applyField(SettingType.lsr, oldSettings?.lsr, controller.lsr,
+        (f) => newSettings.lsr = f);
+    applyField(SettingType.hsr, oldSettings?.hsr, controller.hsr,
+        (f) => newSettings.hsr = f);
   }
 
   void _updateTyreValues(
@@ -234,10 +238,10 @@ class _SetupEditState extends State<SetupEdit> {
       setter(newField);
     }
 
-    applyField(SettingType.frontTyrePressure, oldTyres?.front,
-        controller.front, (f) => newTyres.front = f);
-    applyField(SettingType.rearTyrePressure, oldTyres?.rear,
-        controller.rear, (f) => newTyres.rear = f);
+    applyField(SettingType.frontTyrePressure, oldTyres?.front, controller.front,
+        (f) => newTyres.front = f);
+    applyField(SettingType.rearTyrePressure, oldTyres?.rear, controller.rear,
+        (f) => newTyres.rear = f);
   }
 
   @override
@@ -273,7 +277,8 @@ class _SetupEditState extends State<SetupEdit> {
                   settingsFormController: _setupFormController.fork,
                 ),
                 _ComponentInfoFields(
-                  serialNumberController: _setupFormController.fork.serialNumber,
+                  serialNumberController:
+                      _setupFormController.fork.serialNumber,
                   infoUrlController: _setupFormController.fork.infoUrl,
                 ),
                 const TitleWithIcon(
@@ -283,11 +288,11 @@ class _SetupEditState extends State<SetupEdit> {
                   settingsFormController: _setupFormController.shock,
                 ),
                 _ComponentInfoFields(
-                  serialNumberController: _setupFormController.shock.serialNumber,
+                  serialNumberController:
+                      _setupFormController.shock.serialNumber,
                   infoUrlController: _setupFormController.shock.infoUrl,
                 ),
-                const TitleWithIcon(
-                    title: 'Tyres', icon: SuspensionIcons.tyre),
+                const TitleWithIcon(title: 'Tyres', icon: SuspensionIcons.tyre),
                 TyreTiles(
                   tyres: widget.setup?.tyres,
                   tyresFormController: _setupFormController.tyres,
@@ -336,7 +341,8 @@ class _ComponentInfoFields extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: Text('Product Information', style: theme.textTheme.titleMedium),
+            title:
+                Text('Product Information', style: theme.textTheme.titleMedium),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -351,7 +357,8 @@ class _ComponentInfoFields extends StatelessWidget {
                   controller: infoUrlController,
                   decoration: const InputDecoration(
                     labelText: 'Product Information URL',
-                    helperText: "Link to the manufacturer's product page for this component",
+                    helperText:
+                        "Link to the manufacturer's product page for this component",
                   ),
                   keyboardType: TextInputType.url,
                   validator: validateInfoUrl,

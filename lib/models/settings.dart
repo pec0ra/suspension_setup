@@ -73,7 +73,8 @@ class Settings {
 
   factory Settings.getDefault() {
     return Settings(
-      airPressure: Field(value: 0, unit: defaultUnits[SettingType.airPressure]!),
+      airPressure:
+          Field(value: 0, unit: defaultUnits[SettingType.airPressure]!),
       sag: Field(value: 0, unit: defaultUnits[SettingType.sag]!),
       volumeSpacer: null,
       lsc: Field(value: 0, unit: defaultUnits[SettingType.lsc]!),

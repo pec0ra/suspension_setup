@@ -116,23 +116,39 @@ void main() {
       expect(result['id-2']?.name, 'XC setup');
     });
 
-    test('throws SetupLoadException for corrupt JSON', () async {
+    test('throws SetupCorruptFileException for corrupt JSON', () async {
       final filePath = '${tempDir.path}/corrupt.json';
       await File(filePath).writeAsString('not valid json {{{{');
 
       expect(
         () => SetupFileUtil.readSetups(filePath),
-        throwsA(isA<SetupLoadException>()),
+        throwsA(isA<SetupCorruptFileException>()),
       );
     });
 
-    test('throws SetupLoadException when JSON root is not an object', () async {
+    test('throws SetupCorruptFileException when JSON root is not an object',
+        () async {
       final filePath = '${tempDir.path}/array.json';
       await File(filePath).writeAsString(jsonEncode([1, 2, 3]));
 
       expect(
         () => SetupFileUtil.readSetups(filePath),
-        throwsA(isA<SetupLoadException>()),
+        throwsA(isA<SetupCorruptFileException>()),
+      );
+    });
+
+    test(
+        'throws SetupVersionTooNewException for file with future schema version',
+        () async {
+      final filePath = '${tempDir.path}/future.json';
+      await File(filePath).writeAsString(jsonEncode({
+        'schemaVersion': currentSchemaVersion + 1,
+        'setups': {},
+      }));
+
+      expect(
+        () => SetupFileUtil.readSetups(filePath),
+        throwsA(isA<SetupVersionTooNewException>()),
       );
     });
   });

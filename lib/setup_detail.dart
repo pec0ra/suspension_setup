@@ -28,8 +28,7 @@ class SetupDetail extends StatelessWidget {
     return Consumer<SetupStorageModel>(builder: (context, setupModel, child) {
       var setup = setupModel.getSetup(setupId);
       if (setup == null) {
-        return const ErrorScreenWidget(
-            message: 'Setup not found');
+        return const ErrorScreenWidget(message: 'Setup not found');
       } else {
         return Scaffold(
           appBar: AppBar(
@@ -111,7 +110,8 @@ class _ComponentInfo extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: Text('Product Information', style: theme.textTheme.titleMedium),
+            title:
+                Text('Product Information', style: theme.textTheme.titleMedium),
           ),
           const Divider(height: 0),
           Padding(
@@ -119,7 +119,8 @@ class _ComponentInfo extends StatelessWidget {
             child: Row(
               children: [
                 if (sn != null) ...[
-                  Icon(Icons.tag, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                  Icon(Icons.tag,
+                      size: 16, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -204,9 +205,8 @@ class History extends StatelessWidget {
           Settings.defaultUnits[change.settingType] ??
           '';
     }
-    final settings = change.suspensionType == SuspensionType.fork
-        ? setup.fork
-        : setup.shock;
+    final settings =
+        change.suspensionType == SuspensionType.fork ? setup.fork : setup.shock;
     return settings.fieldFor(change.settingType)?.unit ??
         Settings.defaultUnits[change.settingType] ??
         '';
@@ -273,7 +273,8 @@ class History extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           behavior: SnackBarBehavior.floating,
-          content: Text('Nothing to undo — values are already at those settings'),
+          content:
+              Text('Nothing to undo — values are already at those settings'),
         ),
       );
       return;

@@ -53,8 +53,7 @@ void main() {
     });
 
     testWidgets('renders card with serialNumber when set', (tester) async {
-      await tester.pumpWidget(
-          _harness(_makeSetup(serialNumber: 'SN-ABC-123')));
+      await tester.pumpWidget(_harness(_makeSetup(serialNumber: 'SN-ABC-123')));
       await tester.pump();
 
       expect(find.text('Product Information'), findsOneWidget);
@@ -65,8 +64,8 @@ void main() {
 
     testWidgets('renders Manufacturer Page button when infoUrl is set',
         (tester) async {
-      await tester.pumpWidget(
-          _harness(_makeSetup(infoUrl: 'https://example.com')));
+      await tester
+          .pumpWidget(_harness(_makeSetup(infoUrl: 'https://example.com')));
       await tester.pump();
 
       expect(find.text('Product Information'), findsOneWidget);

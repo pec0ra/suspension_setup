@@ -83,7 +83,9 @@ void main() {
       expect(clone.infoUrl, 'https://orig.example.com');
     });
 
-    test('deserializes JSON without serialNumber/infoUrl keys (backwards compat)', () {
+    test(
+        'deserializes JSON without serialNumber/infoUrl keys (backwards compat)',
+        () {
       final json = {
         'airPressure': {'value': 100, 'unit': 'PSI'},
         'sag': null,
@@ -420,9 +422,8 @@ void main() {
             lsr: const Field(value: 2, unit: 'Clicks'),
           ),
           tyres: Tyres(
-            front: frontTyre != null
-                ? Field(value: frontTyre, unit: 'PSI')
-                : null,
+            front:
+                frontTyre != null ? Field(value: frontTyre, unit: 'PSI') : null,
           ),
           history: [],
         );
@@ -457,7 +458,8 @@ void main() {
       expect(result.first.newValue, 100);
     });
 
-    test('skips change when current value already equals old value (no-op)', () {
+    test('skips change when current value already equals old value (no-op)',
+        () {
       final setup = makeSetup(forkAir: 100);
       final entry = SettingChanges(
         changes: [makeChange(oldValue: 100, newValue: 110)],
@@ -488,7 +490,11 @@ void main() {
       final setup = makeSetup(forkAir: 120);
       final entry = SettingChanges(
         changes: [
-          makeChange(oldValue: null, newValue: 120, oldEnabled: false, newEnabled: true),
+          makeChange(
+              oldValue: null,
+              newValue: 120,
+              oldEnabled: false,
+              newEnabled: true),
         ],
         date: DateTime.now(),
       );
@@ -560,7 +566,8 @@ void main() {
       final setup = makeSetup(forkAir: 100, forkLsc: 10);
       final entry = SettingChanges(
         changes: [
-          makeChange(setting: SettingType.airPressure, oldValue: 100, newValue: 110),
+          makeChange(
+              setting: SettingType.airPressure, oldValue: 100, newValue: 110),
           makeChange(setting: SettingType.lsc, oldValue: 8, newValue: 10),
         ],
         date: DateTime.now(),
@@ -727,7 +734,6 @@ void main() {
       expect(setup.tyres.front?.value, 22);
       expect(setup.tyres.front?.unit, 'PSI');
     });
-
   });
 
   group('computeUndo + applyChanges round-trip', () {

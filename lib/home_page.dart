@@ -70,14 +70,16 @@ class _HomePageState extends State<HomePage> {
         ],
         leading: Padding(
           padding: const EdgeInsets.fromLTRB(14, 7, 0, 7),
-          child: SvgPicture.asset("assets/icon/icon-white.svg", colorFilter: ColorFilter.mode(theme.colorScheme.onSurface, BlendMode.srcIn)),
+          child: SvgPicture.asset("assets/icon/icon-white.svg",
+              colorFilter: ColorFilter.mode(
+                  theme.colorScheme.onSurface, BlendMode.srcIn)),
         ),
       ),
       body: Consumer<SetupStorageModel>(
         builder: (context, setupModel, child) {
           if (setupModel.loadError != null) {
-            return ErrorScreenWidget(
-              message: setupModel.loadError!,
+            return ErrorScreenWidget.fromLoadError(
+              error: setupModel.loadError!,
               onRestore: () => _restore(context),
             );
           }
@@ -125,7 +127,8 @@ class _HomePageState extends State<HomePage> {
                             spacing: 4,
                             children: [
                               Icon(Icons.history, size: 14),
-                              Text(DateFormat.yMMMd().format(setup.history.last.date)),
+                              Text(DateFormat.yMMMd()
+                                  .format(setup.history.last.date)),
                             ],
                           )
                         : null,
@@ -139,7 +142,8 @@ class _HomePageState extends State<HomePage> {
                                 )),
                       );
                     },
-                    onLongPress: () => _showSetupSheet(context, setup, setupModel),
+                    onLongPress: () =>
+                        _showSetupSheet(context, setup, setupModel),
                   ),
                 ),
             ],
@@ -156,7 +160,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showSetupSheet(BuildContext context, Setup setup, SetupStorageModel setupModel) {
+  void _showSetupSheet(
+      BuildContext context, Setup setup, SetupStorageModel setupModel) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
@@ -184,7 +189,8 @@ class _HomePageState extends State<HomePage> {
             ),
             ListTile(
               leading: Icon(Icons.delete, color: theme.colorScheme.error),
-              title: Text('Delete', style: TextStyle(color: theme.colorScheme.error)),
+              title: Text('Delete',
+                  style: TextStyle(color: theme.colorScheme.error)),
               onTap: () {
                 Navigator.pop(sheetContext);
                 showDeleteSetupDialog(context, setup, setupModel);
@@ -204,12 +210,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _backup(BuildContext context) async {
-    final success = await Provider.of<SetupStorageModel>(context, listen: false)
-        .backup();
+    final success =
+        await Provider.of<SetupStorageModel>(context, listen: false).backup();
     if (!context.mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Backup saved successfully')),
+        const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Backup saved successfully')),
       );
     }
   }
@@ -232,7 +240,8 @@ class _HomePageState extends State<HomePage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(dialogContext).colorScheme.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(dialogContext).colorScheme.error),
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Restore'),
           ),
@@ -246,7 +255,9 @@ class _HomePageState extends State<HomePage> {
       await model.restoreFromFile(filePath);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(behavior: SnackBarBehavior.floating, content: Text('Setups restored successfully')),
+        const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Setups restored successfully')),
       );
     } on SetupLoadException catch (e) {
       if (!context.mounted) return;
@@ -255,7 +266,8 @@ class _HomePageState extends State<HomePage> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: colors.errorContainer,
-          content: Text(e.message, style: TextStyle(color: colors.onErrorContainer)),
+          content:
+              Text(e.message, style: TextStyle(color: colors.onErrorContainer)),
         ),
       );
     }
