@@ -203,10 +203,10 @@ class FieldEditCard extends StatelessWidget {
                               labelStyle: theme.textTheme.bodySmall,
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
+                                signed: true, decimal: true),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9.]')),
+                                  RegExp(r'[0-9.\-]')),
                             ],
                             controller: controller.value,
                             validator: (v) {
