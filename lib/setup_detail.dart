@@ -15,6 +15,7 @@ import 'setup_edit.dart';
 import 'setup_snapshot.dart';
 import 'setup_storage_model.dart';
 import 'title_with_icon.dart';
+import 'value_edit.dart';
 
 class SetupDetail extends StatelessWidget {
   const SetupDetail({
@@ -31,24 +32,39 @@ class SetupDetail extends StatelessWidget {
       if (setup == null) {
         return const ErrorScreenWidget(message: 'Setup not found');
       } else {
+        final hasValueFields = setup.fork.hasAnyValueField ||
+            setup.shock.hasAnyValueField ||
+            setup.tyres.hasAnyField;
+
         return Scaffold(
           appBar: AppBar(
             title: Text(setup.name),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
-                tooltip: 'Edit',
-                onPressed: () => {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => SetupEdit(setup: setup)),
-                  )
-                },
+                icon: const Icon(Icons.settings),
+                tooltip: 'Configure setup',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => SetupEdit(setup: setup)),
+                ),
               ),
               OverflowMenu(setup: setup)
             ],
           ),
+          floatingActionButton: hasValueFields
+              ? FloatingActionButton(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => ValueEdit(setup: setup)),
+                  ),
+                  tooltip: 'Edit values',
+                  child: const Icon(Icons.tune),
+                )
+              : null,
           body: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -180,7 +196,7 @@ class _EmptySettings extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onEdit,
-              icon: const Icon(Icons.edit),
+              icon: const Icon(Icons.settings),
               label: const Text('Edit setup'),
             ),
           ],

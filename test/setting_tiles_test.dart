@@ -8,14 +8,14 @@ Widget _harness(GlobalKey<FormState> key, FieldFormController controller) {
     home: Scaffold(
       body: Form(
         key: key,
-        child: FieldEditCard(name: 'Air Pressure', controller: controller),
+        child: FieldValueCard(name: 'Air Pressure', controller: controller),
       ),
     ),
   );
 }
 
 void main() {
-  group('FieldEditCard decimal input', () {
+  group('FieldValueCard decimal input', () {
     testWidgets('accepts a decimal value and parses it via num.parse',
         (tester) async {
       final formKey = GlobalKey<FormState>();

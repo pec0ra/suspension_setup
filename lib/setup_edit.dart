@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/setup_form_controller.dart';
-import 'models/field.dart';
 import 'models/setting_change.dart';
-import 'models/settings.dart';
+import 'models/setup_form_controller.dart';
 import 'models/setup.dart';
-import 'models/tyres.dart';
 import 'setting_tiles.dart';
+import 'setup_commit.dart';
 import 'setup_storage_model.dart';
 import 'suspension_icons.dart';
 import 'title_with_icon.dart';
+import 'value_edit.dart';
 
 class SetupEdit extends StatefulWidget {
   const SetupEdit({
@@ -26,109 +25,60 @@ class SetupEdit extends StatefulWidget {
 
 class _SetupEditState extends State<SetupEdit> {
   final _formKey = GlobalKey<FormState>();
-  late SetupFormController _setupFormController;
+  late final SetupFormController _controller;
   final TextEditingController _commentController = TextEditingController();
+
+  List<FieldFormController> get _allFieldControllers => [
+        _controller.fork.airPressure,
+        _controller.fork.sag,
+        _controller.fork.volumeSpacer,
+        _controller.fork.lsc,
+        _controller.fork.hsc,
+        _controller.fork.lsr,
+        _controller.fork.hsr,
+        _controller.shock.airPressure,
+        _controller.shock.sag,
+        _controller.shock.volumeSpacer,
+        _controller.shock.lsc,
+        _controller.shock.hsc,
+        _controller.shock.lsr,
+        _controller.shock.hsr,
+        _controller.tyres.front,
+        _controller.tyres.rear,
+      ];
 
   @override
   void initState() {
-    _setupFormController = SetupFormController(widget.setup);
     super.initState();
+    _controller = SetupFormController(widget.setup);
+    for (final field in _allFieldControllers) {
+      field.enabled.addListener(_onEnabledChanged);
+    }
   }
+
+  void _onEnabledChanged() => setState(() {});
 
   @override
   void dispose() {
+    for (final field in _allFieldControllers) {
+      field.enabled.removeListener(_onEnabledChanged);
+    }
     _commentController.dispose();
-    _setupFormController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _onSetupChanged(BuildContext context) async {
-    if (_formKey.currentState!.validate()) {
-      var newSetup = widget.setup?.copyMutable() ?? Setup.getDefault();
-      SettingChanges settingChanges =
-          SettingChanges(changes: [], date: DateTime.now());
+  bool get _hasNewlyEnabled => _controller.hasNewlyEnabledFields(widget.setup);
 
-      _updateValues(
-        SuspensionType.fork,
-        _setupFormController.fork,
-        widget.setup?.fork,
-        settingChanges,
-        newSetup.fork,
-      );
-      _updateValues(
-        SuspensionType.shock,
-        _setupFormController.shock,
-        widget.setup?.shock,
-        settingChanges,
-        newSetup.shock,
-      );
-      _updateTyreValues(
-        _setupFormController.tyres,
-        widget.setup?.tyres,
-        settingChanges,
-        newSetup.tyres,
-      );
-
-      String? trimmed(TextEditingController ctrl) {
-        final t = ctrl.text.trim();
-        return t.isEmpty ? null : t;
-      }
-
-      newSetup.fork.serialNumber =
-          trimmed(_setupFormController.fork.serialNumber);
-      newSetup.fork.infoUrl = trimmed(_setupFormController.fork.infoUrl);
-      newSetup.shock.serialNumber =
-          trimmed(_setupFormController.shock.serialNumber);
-      newSetup.shock.infoUrl = trimmed(_setupFormController.shock.infoUrl);
-
-      if (settingChanges.changes.isNotEmpty) {
-        newSetup.history.add(settingChanges);
-      } else if (widget.setup == null || widget.setup!.history.isEmpty) {
-        newSetup.history.add(SettingChanges(
-          changes: [],
-          date: settingChanges.date,
-          comment: 'Setup creation',
-          isCreationEntry: true,
-        ));
-      }
-      newSetup.name = _setupFormController.name.text;
-
-      if (widget.setup != null && settingChanges.changes.isNotEmpty) {
-        showDialog(
-          context: context,
-          builder: (dialogContext) {
-            return AlertDialog(
-              title: const Text('Comment'),
-              content: TextField(
-                controller: _commentController,
-                decoration: const InputDecoration(
-                    hintText: "Add a comment to your changes"),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                  },
-                ),
-                TextButton(
-                  child: const Text('Save'),
-                  onPressed: () async {
-                    if (_commentController.text.isNotEmpty) {
-                      settingChanges.comment = _commentController.text;
-                    }
-                    Navigator.pop(dialogContext);
-                    await _saveSetup(context, newSetup);
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      } else {
-        await _saveSetup(context, newSetup);
-      }
-    }
+  Future<void> _onSave(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) return;
+    await commitSetup(
+      context: context,
+      controller: _controller,
+      originalSetup: widget.setup,
+      commentController: _commentController,
+      saveSetup: _saveSetup,
+    );
   }
 
   Future<void> _saveSetup(BuildContext context, Setup newSetup) async {
@@ -143,113 +93,38 @@ class _SetupEditState extends State<SetupEdit> {
     );
   }
 
-  void _updateValues(
-    SuspensionType suspensionType,
-    SettingsFormController controller,
-    Settings? oldSettings,
-    SettingChanges settingChanges,
-    Settings newSettings,
-  ) {
-    final isEditing = oldSettings != null;
+  Future<void> _onForwardToValueEdit(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) return;
 
-    void applyField(
-      SettingType type,
-      Field? oldField,
-      FieldFormController ctrl,
-      void Function(Field?) setter,
-    ) {
-      final newField = ctrl.enabled.value
-          ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
-          : null;
+    final valueSnapshot = {
+      for (final ctrl in _allFieldControllers) ctrl: ctrl.value.text,
+    };
 
-      if (isEditing) {
-        final wasEnabled = oldField != null;
-        final isEnabled = ctrl.enabled.value;
-        final enabledChanged = wasEnabled != isEnabled;
-        final valueChanged = oldField?.value != newField?.value;
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ValueEdit(setup: widget.setup, controller: _controller),
+      ),
+    );
 
-        if (enabledChanged || valueChanged) {
-          settingChanges.changes.add(SettingChange(
-            settingType: type,
-            suspensionType: suspensionType,
-            oldValue: oldField?.value,
-            newValue: newField?.value,
-            oldEnabled: enabledChanged ? wasEnabled : null,
-            newEnabled: enabledChanged ? isEnabled : null,
-          ));
-        }
+    if (saved == true) {
+      if (context.mounted) Navigator.pop(context);
+    } else {
+      for (final entry in valueSnapshot.entries) {
+        entry.key.value.text = entry.value;
       }
-
-      setter(newField);
     }
-
-    applyField(SettingType.airPressure, oldSettings?.airPressure,
-        controller.airPressure, (f) => newSettings.airPressure = f);
-    applyField(SettingType.sag, oldSettings?.sag, controller.sag,
-        (f) => newSettings.sag = f);
-    applyField(SettingType.volumeSpacer, oldSettings?.volumeSpacer,
-        controller.volumeSpacer, (f) => newSettings.volumeSpacer = f);
-    applyField(SettingType.lsc, oldSettings?.lsc, controller.lsc,
-        (f) => newSettings.lsc = f);
-    applyField(SettingType.hsc, oldSettings?.hsc, controller.hsc,
-        (f) => newSettings.hsc = f);
-    applyField(SettingType.lsr, oldSettings?.lsr, controller.lsr,
-        (f) => newSettings.lsr = f);
-    applyField(SettingType.hsr, oldSettings?.hsr, controller.hsr,
-        (f) => newSettings.hsr = f);
-  }
-
-  void _updateTyreValues(
-    TyresFormController controller,
-    Tyres? oldTyres,
-    SettingChanges settingChanges,
-    Tyres newTyres,
-  ) {
-    final isEditing = oldTyres != null;
-
-    void applyField(
-      SettingType type,
-      Field? oldField,
-      FieldFormController ctrl,
-      void Function(Field?) setter,
-    ) {
-      final newField = ctrl.enabled.value
-          ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
-          : null;
-
-      if (isEditing) {
-        final wasEnabled = oldField != null;
-        final isEnabled = ctrl.enabled.value;
-        final enabledChanged = wasEnabled != isEnabled;
-        final valueChanged = oldField?.value != newField?.value;
-
-        if (enabledChanged || valueChanged) {
-          settingChanges.changes.add(SettingChange(
-            settingType: type,
-            suspensionType: SuspensionType.tyre,
-            oldValue: oldField?.value,
-            newValue: newField?.value,
-            oldEnabled: enabledChanged ? wasEnabled : null,
-            newEnabled: enabledChanged ? isEnabled : null,
-          ));
-        }
-      }
-
-      setter(newField);
-    }
-
-    applyField(SettingType.frontTyrePressure, oldTyres?.front, controller.front,
-        (f) => newTyres.front = f);
-    applyField(SettingType.rearTyrePressure, oldTyres?.rear, controller.rear,
-        (f) => newTyres.rear = f);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasNewlyEnabled = _hasNewlyEnabled;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.setup?.name ?? 'New Setup'),
+        title: Text(widget.setup == null ? 'New Setup' : 'Configure Setup'),
       ),
       body: SingleChildScrollView(
         child: Form(
@@ -263,7 +138,7 @@ class _SetupEditState extends State<SetupEdit> {
                   decoration: const InputDecoration(
                     hintText: 'Setup Name',
                   ),
-                  controller: _setupFormController.name,
+                  controller: _controller.name,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Setup name cannot be empty';
@@ -272,31 +147,65 @@ class _SetupEditState extends State<SetupEdit> {
                   },
                 ),
                 const TitleWithIcon(title: 'Fork', icon: SuspensionIcons.fork),
-                SettingTiles(
-                  settings: widget.setup?.fork,
-                  settingsFormController: _setupFormController.fork,
-                ),
                 _ComponentInfoFields(
-                  serialNumberController:
-                      _setupFormController.fork.serialNumber,
-                  infoUrlController: _setupFormController.fork.infoUrl,
+                  serialNumberController: _controller.fork.serialNumber,
+                  infoUrlController: _controller.fork.infoUrl,
                 ),
+                FieldConfigCard(
+                    name: SettingType.airPressure.label,
+                    controller: _controller.fork.airPressure),
+                FieldConfigCard(
+                    name: SettingType.sag.label,
+                    controller: _controller.fork.sag),
+                FieldConfigCard(
+                    name: SettingType.volumeSpacer.label,
+                    controller: _controller.fork.volumeSpacer),
+                FieldConfigCard(
+                    name: SettingType.lsc.label,
+                    controller: _controller.fork.lsc),
+                FieldConfigCard (
+                    name: SettingType.hsc.label,
+                    controller: _controller.fork.hsc),
+                FieldConfigCard(
+                    name: SettingType.lsr.label,
+                    controller: _controller.fork.lsr),
+                FieldConfigCard(
+                    name: SettingType.hsr.label,
+                    controller: _controller.fork.hsr),
                 const TitleWithIcon(
                     title: 'Shock', icon: SuspensionIcons.shock),
-                SettingTiles(
-                  settings: widget.setup?.shock,
-                  settingsFormController: _setupFormController.shock,
-                ),
                 _ComponentInfoFields(
-                  serialNumberController:
-                      _setupFormController.shock.serialNumber,
-                  infoUrlController: _setupFormController.shock.infoUrl,
+                  serialNumberController: _controller.shock.serialNumber,
+                  infoUrlController: _controller.shock.infoUrl,
                 ),
+                FieldConfigCard(
+                    name: SettingType.airPressure.label,
+                    controller: _controller.shock.airPressure),
+                FieldConfigCard(
+                    name: SettingType.sag.label,
+                    controller: _controller.shock.sag),
+                FieldConfigCard(
+                    name: SettingType.volumeSpacer.label,
+                    controller: _controller.shock.volumeSpacer),
+                FieldConfigCard(
+                    name: SettingType.lsc.label,
+                    controller: _controller.shock.lsc),
+                FieldConfigCard(
+                    name: SettingType.hsc.label,
+                    controller: _controller.shock.hsc),
+                FieldConfigCard(
+                    name: SettingType.lsr.label,
+                    controller: _controller.shock.lsr),
+                FieldConfigCard(
+                    name: SettingType.hsr.label,
+                    controller: _controller.shock.hsr),
                 const TitleWithIcon(title: 'Tyres', icon: SuspensionIcons.tyre),
-                TyreTiles(
-                  tyres: widget.setup?.tyres,
-                  tyresFormController: _setupFormController.tyres,
-                ),
+                FieldConfigCard(
+                    name: SettingType.frontTyrePressure.label,
+                    controller: _controller.tyres.front),
+                FieldConfigCard(
+                    name: SettingType.rearTyrePressure.label,
+                    controller: _controller.tyres.rear),
               ],
             ),
           ),
@@ -305,9 +214,33 @@ class _SetupEditState extends State<SetupEdit> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
-        onPressed: () => _onSetupChanged(context),
-        tooltip: 'Save setup',
-        child: const Icon(Icons.save),
+        onPressed: hasNewlyEnabled
+            ? () => _onForwardToValueEdit(context)
+            : () => _onSave(context),
+        tooltip: hasNewlyEnabled ? 'Edit values' : 'Save setup',
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) {
+            final isEntering =
+                (child.key as ValueKey<bool>).value == hasNewlyEnabled;
+            // Exiting: 0.0→0.5 turns (0°→180°), Entering: 0.5→1.0 (180°→360°)
+            // Both clockwise — exit hands off seamlessly to the entering icon.
+            final rotateTween = isEntering
+                ? Tween(begin: 0.5, end: 1.0)
+                : Tween(begin: 0.5, end: 0.0);
+            return ScaleTransition(
+              scale: animation,
+              child: RotationTransition(
+                turns: rotateTween.animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Icon(
+            hasNewlyEnabled ? Icons.arrow_forward : Icons.save,
+            key: ValueKey(hasNewlyEnabled),
+          ),
+        ),
       ),
     );
   }

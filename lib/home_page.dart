@@ -249,7 +249,7 @@ class _HomePageState extends State<HomePage> {
           ),
           ListTile(
             leading: const Icon(Icons.share),
-            title: const Text('Share...'),
+            title: const Text('Share'),
             onTap: () {
               Navigator.pop(sheetContext);
               model.shareBackup();
