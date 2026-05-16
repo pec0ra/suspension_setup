@@ -135,6 +135,15 @@ class Setup {
     }
   }
 
+  Setup snapshotAt(SettingChanges target) {
+    final snapshot = copyMutable();
+    for (final entry in history.reversed) {
+      if (entry.id == target.id) break;
+      snapshot.applyChanges(entry.changes.map((c) => c.inverted()).toList());
+    }
+    return snapshot;
+  }
+
   Setup clone(bool includeHistory) {
     return Setup(
       id: const Uuid().v1(),

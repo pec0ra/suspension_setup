@@ -12,6 +12,7 @@ import 'models/settings.dart';
 import 'setting_tiles.dart';
 import 'setup_actions.dart';
 import 'setup_edit.dart';
+import 'setup_snapshot.dart';
 import 'setup_storage_model.dart';
 import 'title_with_icon.dart';
 
@@ -376,6 +377,23 @@ class History extends StatelessWidget {
                   : null,
             ),
             const Divider(height: 0),
+            ListTile(
+              leading: const Icon(Icons.history_toggle_off),
+              title: const Text('View snapshot'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SetupSnapshotPage(
+                      snapshot: setup.snapshotAt(entry),
+                      date: entry.date,
+                      comment: entry.comment,
+                    ),
+                  ),
+                );
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.edit),
               title: const Text('Edit comment'),

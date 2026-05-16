@@ -96,6 +96,17 @@ class SettingChange {
       newEnabled: newEnabled,
     );
   }
+
+  SettingChange inverted() {
+    return SettingChange(
+      suspensionType: suspensionType,
+      settingType: settingType,
+      oldValue: newValue,
+      newValue: oldValue,
+      oldEnabled: newEnabled,
+      newEnabled: oldEnabled,
+    );
+  }
 }
 
 enum SettingType {
