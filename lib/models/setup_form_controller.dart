@@ -21,40 +21,22 @@ class SetupFormController {
   bool hasNewlyEnabledFields(Setup? originalSetup) {
     bool isNew(FieldFormController ctrl, Field? original) =>
         ctrl.enabled.value && original == null;
-    if (originalSetup == null) {
-      return fork.airPressure.enabled.value ||
-          fork.sag.enabled.value ||
-          fork.volumeSpacer.enabled.value ||
-          fork.lsc.enabled.value ||
-          fork.hsc.enabled.value ||
-          fork.lsr.enabled.value ||
-          fork.hsr.enabled.value ||
-          shock.airPressure.enabled.value ||
-          shock.sag.enabled.value ||
-          shock.volumeSpacer.enabled.value ||
-          shock.lsc.enabled.value ||
-          shock.hsc.enabled.value ||
-          shock.lsr.enabled.value ||
-          shock.hsr.enabled.value ||
-          tyres.front.enabled.value ||
-          tyres.rear.enabled.value;
-    }
-    return isNew(fork.airPressure, originalSetup.fork.airPressure) ||
-        isNew(fork.sag, originalSetup.fork.sag) ||
-        isNew(fork.volumeSpacer, originalSetup.fork.volumeSpacer) ||
-        isNew(fork.lsc, originalSetup.fork.lsc) ||
-        isNew(fork.hsc, originalSetup.fork.hsc) ||
-        isNew(fork.lsr, originalSetup.fork.lsr) ||
-        isNew(fork.hsr, originalSetup.fork.hsr) ||
-        isNew(shock.airPressure, originalSetup.shock.airPressure) ||
-        isNew(shock.sag, originalSetup.shock.sag) ||
-        isNew(shock.volumeSpacer, originalSetup.shock.volumeSpacer) ||
-        isNew(shock.lsc, originalSetup.shock.lsc) ||
-        isNew(shock.hsc, originalSetup.shock.hsc) ||
-        isNew(shock.lsr, originalSetup.shock.lsr) ||
-        isNew(shock.hsr, originalSetup.shock.hsr) ||
-        isNew(tyres.front, originalSetup.tyres.front) ||
-        isNew(tyres.rear, originalSetup.tyres.rear);
+    return isNew(fork.airPressure, originalSetup?.fork.airPressure) ||
+        isNew(fork.sag, originalSetup?.fork.sag) ||
+        isNew(fork.volumeSpacer, originalSetup?.fork.volumeSpacer) ||
+        isNew(fork.lsc, originalSetup?.fork.lsc) ||
+        isNew(fork.hsc, originalSetup?.fork.hsc) ||
+        isNew(fork.lsr, originalSetup?.fork.lsr) ||
+        isNew(fork.hsr, originalSetup?.fork.hsr) ||
+        isNew(shock.airPressure, originalSetup?.shock.airPressure) ||
+        isNew(shock.sag, originalSetup?.shock.sag) ||
+        isNew(shock.volumeSpacer, originalSetup?.shock.volumeSpacer) ||
+        isNew(shock.lsc, originalSetup?.shock.lsc) ||
+        isNew(shock.hsc, originalSetup?.shock.hsc) ||
+        isNew(shock.lsr, originalSetup?.shock.lsr) ||
+        isNew(shock.hsr, originalSetup?.shock.hsr) ||
+        isNew(tyres.front, originalSetup?.tyres.front) ||
+        isNew(tyres.rear, originalSetup?.tyres.rear);
   }
 
   (Setup, SettingChanges) buildResult(Setup? originalSetup) {
@@ -89,6 +71,40 @@ class SetupFormController {
   }
 }
 
+void _applyField(
+  SettingType type,
+  SuspensionType suspensionType,
+  Field? oldField,
+  FieldFormController ctrl,
+  bool isEditing,
+  SettingChanges changes,
+  void Function(Field?) setter,
+) {
+  final newField = ctrl.enabled.value
+      ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
+      : null;
+
+  if (isEditing) {
+    final wasEnabled = oldField != null;
+    final isEnabled = ctrl.enabled.value;
+    final enabledChanged = wasEnabled != isEnabled;
+    final valueChanged = oldField?.value != newField?.value;
+
+    if (enabledChanged || valueChanged) {
+      changes.changes.add(SettingChange(
+        settingType: type,
+        suspensionType: suspensionType,
+        oldValue: oldField?.value,
+        newValue: newField?.value,
+        oldEnabled: enabledChanged ? wasEnabled : null,
+        newEnabled: enabledChanged ? isEnabled : null,
+      ));
+    }
+  }
+
+  setter(newField);
+}
+
 void _applySettings(
   SuspensionType suspensionType,
   SettingsFormController controller,
@@ -97,52 +113,32 @@ void _applySettings(
   Settings newSettings,
 ) {
   final isEditing = oldSettings != null;
-
-  void applyField(
-    SettingType type,
-    Field? oldField,
-    FieldFormController ctrl,
-    void Function(Field?) setter,
-  ) {
-    final newField = ctrl.enabled.value
-        ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
-        : null;
-
-    if (isEditing) {
-      final wasEnabled = oldField != null;
-      final isEnabled = ctrl.enabled.value;
-      final enabledChanged = wasEnabled != isEnabled;
-      final valueChanged = oldField?.value != newField?.value;
-
-      if (enabledChanged || valueChanged) {
-        changes.changes.add(SettingChange(
-          settingType: type,
-          suspensionType: suspensionType,
-          oldValue: oldField?.value,
-          newValue: newField?.value,
-          oldEnabled: enabledChanged ? wasEnabled : null,
-          newEnabled: enabledChanged ? isEnabled : null,
-        ));
-      }
-    }
-
-    setter(newField);
-  }
-
-  applyField(SettingType.airPressure, oldSettings?.airPressure,
-      controller.airPressure, (f) => newSettings.airPressure = f);
-  applyField(SettingType.sag, oldSettings?.sag, controller.sag,
-      (f) => newSettings.sag = f);
-  applyField(SettingType.volumeSpacer, oldSettings?.volumeSpacer,
-      controller.volumeSpacer, (f) => newSettings.volumeSpacer = f);
-  applyField(SettingType.lsc, oldSettings?.lsc, controller.lsc,
-      (f) => newSettings.lsc = f);
-  applyField(SettingType.hsc, oldSettings?.hsc, controller.hsc,
-      (f) => newSettings.hsc = f);
-  applyField(SettingType.lsr, oldSettings?.lsr, controller.lsr,
-      (f) => newSettings.lsr = f);
-  applyField(SettingType.hsr, oldSettings?.hsr, controller.hsr,
-      (f) => newSettings.hsr = f);
+  _applyField(
+      SettingType.airPressure,
+      suspensionType,
+      oldSettings?.airPressure,
+      controller.airPressure,
+      isEditing,
+      changes,
+      (f) => newSettings.airPressure = f);
+  _applyField(SettingType.sag, suspensionType, oldSettings?.sag, controller.sag,
+      isEditing, changes, (f) => newSettings.sag = f);
+  _applyField(
+      SettingType.volumeSpacer,
+      suspensionType,
+      oldSettings?.volumeSpacer,
+      controller.volumeSpacer,
+      isEditing,
+      changes,
+      (f) => newSettings.volumeSpacer = f);
+  _applyField(SettingType.lsc, suspensionType, oldSettings?.lsc, controller.lsc,
+      isEditing, changes, (f) => newSettings.lsc = f);
+  _applyField(SettingType.hsc, suspensionType, oldSettings?.hsc, controller.hsc,
+      isEditing, changes, (f) => newSettings.hsc = f);
+  _applyField(SettingType.lsr, suspensionType, oldSettings?.lsr, controller.lsr,
+      isEditing, changes, (f) => newSettings.lsr = f);
+  _applyField(SettingType.hsr, suspensionType, oldSettings?.hsr, controller.hsr,
+      isEditing, changes, (f) => newSettings.hsr = f);
 }
 
 void _applyTyres(
@@ -152,42 +148,16 @@ void _applyTyres(
   Tyres newTyres,
 ) {
   final isEditing = oldTyres != null;
-
-  void applyField(
-    SettingType type,
-    Field? oldField,
-    FieldFormController ctrl,
-    void Function(Field?) setter,
-  ) {
-    final newField = ctrl.enabled.value
-        ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
-        : null;
-
-    if (isEditing) {
-      final wasEnabled = oldField != null;
-      final isEnabled = ctrl.enabled.value;
-      final enabledChanged = wasEnabled != isEnabled;
-      final valueChanged = oldField?.value != newField?.value;
-
-      if (enabledChanged || valueChanged) {
-        changes.changes.add(SettingChange(
-          settingType: type,
-          suspensionType: SuspensionType.tyre,
-          oldValue: oldField?.value,
-          newValue: newField?.value,
-          oldEnabled: enabledChanged ? wasEnabled : null,
-          newEnabled: enabledChanged ? isEnabled : null,
-        ));
-      }
-    }
-
-    setter(newField);
-  }
-
-  applyField(SettingType.frontTyrePressure, oldTyres?.front, controller.front,
+  _applyField(
+      SettingType.frontTyrePressure,
+      SuspensionType.tyre,
+      oldTyres?.front,
+      controller.front,
+      isEditing,
+      changes,
       (f) => newTyres.front = f);
-  applyField(SettingType.rearTyrePressure, oldTyres?.rear, controller.rear,
-      (f) => newTyres.rear = f);
+  _applyField(SettingType.rearTyrePressure, SuspensionType.tyre, oldTyres?.rear,
+      controller.rear, isEditing, changes, (f) => newTyres.rear = f);
 }
 
 class TyresFormController {

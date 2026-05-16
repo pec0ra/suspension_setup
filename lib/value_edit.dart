@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/setup_form_controller.dart';
 import 'models/setting_change.dart';
+import 'models/setup_form_controller.dart';
 import 'models/setup.dart';
 import 'setting_tiles.dart';
+import 'setup_commit.dart';
 import 'setup_storage_model.dart';
 import 'suspension_icons.dart';
 import 'title_with_icon.dart';
@@ -50,58 +51,12 @@ class _ValueEditState extends State<ValueEdit> {
 
   Future<void> _onSave(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
-
-    final (newSetup, changes) = _controller.buildResult(widget.setup);
-
-    if (widget.setup != null && changes.changes.isNotEmpty) {
-      _showCommentDialog(context, () async {
-        if (_commentController.text.isNotEmpty) {
-          changes.comment = _commentController.text;
-        }
-        newSetup.history.add(changes);
-        await _saveSetup(context, newSetup);
-      });
-    } else {
-      if (widget.setup == null || widget.setup!.history.isEmpty) {
-        newSetup.history.add(SettingChanges(
-          changes: [],
-          date: changes.date,
-          comment: 'Setup creation',
-          isCreationEntry: true,
-        ));
-      }
-      await _saveSetup(context, newSetup);
-    }
-  }
-
-  void _showCommentDialog(
-      BuildContext context, Future<void> Function() onSave) {
-    _commentController.clear();
-    showDialog(
+    await commitSetup(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Comment'),
-          content: TextField(
-            controller: _commentController,
-            decoration: const InputDecoration(
-                hintText: 'Add a comment to your changes'),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-            TextButton(
-              child: const Text('Save'),
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-                await onSave();
-              },
-            ),
-          ],
-        );
-      },
+      controller: _controller,
+      originalSetup: widget.setup,
+      commentController: _commentController,
+      saveSetup: _saveSetup,
     );
   }
 
