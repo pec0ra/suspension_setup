@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
@@ -166,6 +169,7 @@ class _HomePageState extends State<HomePage> {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (sheetContext) {
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -196,6 +200,7 @@ class _HomePageState extends State<HomePage> {
                 showDeleteSetupDialog(context, setup, setupModel);
               },
             ),
+            const SizedBox(height: 8),
           ],
         );
       },
@@ -210,8 +215,55 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _backup(BuildContext context) async {
-    final success =
-        await Provider.of<SetupStorageModel>(context, listen: false).backup();
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      _showBackupBottomSheet(context);
+    } else {
+      await _saveToDevice(context);
+    }
+  }
+
+  void _showBackupBottomSheet(BuildContext context) {
+    final model = Provider.of<SetupStorageModel>(context, listen: false);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Save backup',
+              style: Theme.of(sheetContext).textTheme.titleLarge,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.save_alt),
+            title: const Text('Save to device'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              _saveToDevice(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.share),
+            title: const Text('Share...'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              model.shareBackup();
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveToDevice(BuildContext context) async {
+    final success = await Provider.of<SetupStorageModel>(context, listen: false)
+        .saveBackupToDevice();
     if (!context.mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
