@@ -361,6 +361,7 @@ class History extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (sheetContext) {
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -392,6 +393,7 @@ class History extends StatelessWidget {
                   _handleUndo(context, entry);
                 },
               ),
+            const SizedBox(height: 8),
           ],
         );
       },
