@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
-import 'package:suspension_setup/models/tyres.dart';
 import 'package:suspension_setup/setup_detail.dart';
 import 'package:suspension_setup/setup_storage_model.dart';
 
@@ -27,16 +26,20 @@ Widget _harness(Setup setup) {
 }
 
 Setup _makeSetup({String? serialNumber, String? infoUrl}) {
+  final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 70);
   return Setup(
     id: 'test-id',
     name: 'Trail Setup',
-    fork: Settings(
-      airPressure: const Field(value: 70, unit: 'PSI'),
+    fork: SectionSettings(
+      fields: [airField],
+      layout: [
+        [airField.id]
+      ],
       serialNumber: serialNumber,
       infoUrl: infoUrl,
     ),
-    shock: Settings(),
-    tyres: Tyres(),
+    shock: SectionSettings(fields: [], layout: []),
+    tyres: SectionSettings(fields: [], layout: []),
     history: [],
   );
 }

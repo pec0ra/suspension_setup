@@ -49,7 +49,7 @@ class SettingChanges {
 
 class SettingChange {
   final SuspensionType suspensionType;
-  final SettingType settingType;
+  final String fieldId;
   final num? oldValue;
   final num? newValue;
   final bool? oldEnabled;
@@ -57,7 +57,7 @@ class SettingChange {
 
   SettingChange({
     required this.suspensionType,
-    required this.settingType,
+    required this.fieldId,
     required this.oldValue,
     required this.newValue,
     this.oldEnabled,
@@ -67,7 +67,7 @@ class SettingChange {
   factory SettingChange.fromJson(Map<String, dynamic> json) {
     return SettingChange(
       suspensionType: SuspensionType.fromJson(json['suspensionType']),
-      settingType: SettingType.fromJson(json['settingType']),
+      fieldId: json['fieldId'] as String,
       oldValue: json['oldValue'],
       newValue: json['newValue'],
       oldEnabled: json['oldEnabled'],
@@ -78,7 +78,7 @@ class SettingChange {
   Map<String, dynamic> toJson() {
     return {
       'suspensionType': suspensionType.toJson(),
-      'settingType': settingType.toJson(),
+      'fieldId': fieldId,
       'oldValue': oldValue,
       'newValue': newValue,
       'oldEnabled': oldEnabled,
@@ -89,7 +89,7 @@ class SettingChange {
   SettingChange clone() {
     return SettingChange(
       suspensionType: suspensionType,
-      settingType: settingType,
+      fieldId: fieldId,
       oldValue: oldValue,
       newValue: newValue,
       oldEnabled: oldEnabled,
@@ -100,41 +100,13 @@ class SettingChange {
   SettingChange inverted() {
     return SettingChange(
       suspensionType: suspensionType,
-      settingType: settingType,
+      fieldId: fieldId,
       oldValue: newValue,
       newValue: oldValue,
       oldEnabled: newEnabled,
       newEnabled: oldEnabled,
     );
   }
-}
-
-enum SettingType {
-  airPressure,
-  volumeSpacer,
-  sag,
-  lsr,
-  hsr,
-  lsc,
-  hsc,
-  frontTyrePressure,
-  rearTyrePressure;
-
-  static SettingType fromJson(String json) => values.byName(json);
-
-  String toJson() => name;
-
-  String get label => switch (this) {
-        SettingType.airPressure => 'Air Pressure',
-        SettingType.sag => 'Sag',
-        SettingType.volumeSpacer => 'Volume',
-        SettingType.lsc => 'Low Speed Compression',
-        SettingType.hsc => 'High Speed Compression',
-        SettingType.lsr => 'Low Speed Rebound',
-        SettingType.hsr => 'High Speed Rebound',
-        SettingType.frontTyrePressure => 'Front Tyre Pressure',
-        SettingType.rearTyrePressure => 'Rear Tyre Pressure',
-      };
 }
 
 enum SuspensionType {

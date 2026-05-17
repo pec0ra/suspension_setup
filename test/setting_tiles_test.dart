@@ -8,7 +8,7 @@ Widget _harness(GlobalKey<FormState> key, FieldFormController controller) {
     home: Scaffold(
       body: Form(
         key: key,
-        child: FieldValueCard(name: 'Air Pressure', controller: controller),
+        child: FieldValueCard(controller: controller),
       ),
     ),
   );
@@ -19,8 +19,11 @@ void main() {
     testWidgets('accepts a decimal value and parses it via num.parse',
         (tester) async {
       final formKey = GlobalKey<FormState>();
-      final controller =
-          FieldFormController(enabled: true, value: null, unit: 'PSI');
+      final controller = FieldFormController(
+        id: 'test-id',
+        fieldName: 'Air Pressure',
+        unit: 'PSI',
+      );
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(_harness(formKey, controller));
@@ -33,8 +36,11 @@ void main() {
 
     testWidgets('validator rejects malformed numbers', (tester) async {
       final formKey = GlobalKey<FormState>();
-      final controller =
-          FieldFormController(enabled: true, value: null, unit: 'PSI');
+      final controller = FieldFormController(
+        id: 'test-id',
+        fieldName: 'Air Pressure',
+        unit: 'PSI',
+      );
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(_harness(formKey, controller));

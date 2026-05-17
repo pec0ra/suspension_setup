@@ -3,131 +3,130 @@ import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
-import 'package:suspension_setup/models/tyres.dart';
-
-Settings _makeSettings({bool allEnabled = true}) {
-  if (allEnabled) {
-    return Settings(
-      airPressure: const Field(value: 120, unit: 'PSI'),
-      sag: const Field(value: 30, unit: '%'),
-      volumeSpacer: const Field(value: 3, unit: 'Spacers'),
-      lsc: const Field(value: 10, unit: 'Clicks'),
-      hsc: const Field(value: 5, unit: 'Clicks'),
-      lsr: const Field(value: 8, unit: 'Clicks'),
-      hsr: const Field(value: 4, unit: 'Clicks'),
-    );
-  }
-  return Settings(
-    airPressure: const Field(value: 100, unit: 'PSI'),
-    sag: const Field(value: 25, unit: '%'),
-    lsc: const Field(value: 6, unit: 'Clicks'),
-    lsr: const Field(value: 4, unit: 'Clicks'),
-  );
-}
 
 void main() {
-  group('Settings', () {
-    test('roundtrips through JSON with all fields enabled', () {
-      final settings = _makeSettings(allEnabled: true);
-      final restored = Settings.fromJson(settings.toJson());
-      expect(restored.airPressure?.value, 120);
-      expect(restored.airPressure?.unit, 'PSI');
-      expect(restored.sag?.value, 30);
-      expect(restored.volumeSpacer?.value, 3);
-      expect(restored.lsc?.value, 10);
-      expect(restored.hsc?.value, 5);
-      expect(restored.lsr?.value, 8);
-      expect(restored.hsr?.value, 4);
-    });
-
-    test('roundtrips through JSON with optional fields disabled (null)', () {
-      final settings = _makeSettings(allEnabled: false);
-      final restored = Settings.fromJson(settings.toJson());
-      expect(restored.airPressure?.value, 100);
-      expect(restored.volumeSpacer, isNull);
-      expect(restored.hsc, isNull);
-      expect(restored.hsr, isNull);
-    });
-
-    test('serialNumber and infoUrl roundtrip through JSON', () {
-      final settings = Settings(
-        airPressure: const Field(value: 100, unit: 'PSI'),
-        serialNumber: 'SN-ABC-123',
-        infoUrl: 'https://example.com/product',
-      );
-      final restored = Settings.fromJson(settings.toJson());
-      expect(restored.serialNumber, 'SN-ABC-123');
-      expect(restored.infoUrl, 'https://example.com/product');
-    });
-
-    test('hasAnyField true when only serialNumber set', () {
-      expect(Settings(serialNumber: 'SN-123').hasAnyField, isTrue);
-    });
-
-    test('hasAnyField true when only infoUrl set', () {
-      expect(Settings(infoUrl: 'https://example.com').hasAnyField, isTrue);
-    });
-
-    test('hasAnyField false when no fields set', () {
-      expect(Settings().hasAnyField, isFalse);
-    });
-
-    test('clone copies serialNumber and infoUrl', () {
-      final original = Settings(
-        airPressure: const Field(value: 80, unit: 'PSI'),
-        serialNumber: 'SN-ORIG',
-        infoUrl: 'https://orig.example.com',
-      );
-      final clone = original.clone();
-      expect(clone.serialNumber, 'SN-ORIG');
-      expect(clone.infoUrl, 'https://orig.example.com');
-    });
-
-    test(
-        'deserializes JSON without serialNumber/infoUrl keys (backwards compat)',
-        () {
-      final json = {
-        'airPressure': {'value': 100, 'unit': 'PSI'},
-        'sag': null,
-        'volumeSpacer': null,
-        'lsc': null,
-        'hsc': null,
-        'lsr': null,
-        'hsr': null,
-      };
-      final settings = Settings.fromJson(json);
-      expect(settings.serialNumber, isNull);
-      expect(settings.infoUrl, isNull);
-      expect(settings.airPressure?.value, 100);
-    });
-
-    test('clone produces equal but independent copy', () {
-      final original = Settings(
-        airPressure: const Field(value: 80, unit: 'PSI'),
-        sag: const Field(value: 20, unit: '%'),
-        lsc: const Field(value: 4, unit: 'Clicks'),
-        lsr: const Field(value: 3, unit: 'Clicks'),
-        hsc: const Field(value: 2, unit: 'Clicks'),
-        hsr: const Field(value: 1, unit: 'Clicks'),
-      );
-      final clone = original.clone();
-      clone.airPressure = const Field(value: 999, unit: 'PSI');
-      expect(original.airPressure?.value, 80);
-    });
-  });
-
   group('Field', () {
     test('roundtrips a decimal value through JSON', () {
-      const original = Field(value: 28.5, unit: 'PSI');
+      final original = Field(name: 'Air Pressure', unit: 'PSI', value: 28.5);
       final restored = Field.fromJson(original.toJson());
+      expect(restored.id, original.id);
+      expect(restored.name, 'Air Pressure');
       expect(restored.value, 28.5);
       expect(restored.unit, 'PSI');
+      expect(restored.deleted, false);
+    });
+
+    test('roundtrips a deleted field through JSON', () {
+      final original = Field(name: 'Sag', unit: '%', deleted: true);
+      final restored = Field.fromJson(original.toJson());
+      expect(restored.deleted, true);
+      expect(restored.value, isNull);
     });
 
     test('legacy integer JSON parses as int (no coercion to double)', () {
-      final restored = Field.fromJson({'value': 100, 'unit': 'PSI'});
+      final restored = Field.fromJson(
+          {'id': 'test-id', 'name': 'Air', 'unit': 'PSI', 'value': 100});
       expect(restored.value, 100);
       expect(restored.value, isA<int>());
+    });
+
+    test('copyWith updates fields and preserves id', () {
+      final original = Field(name: 'Air', unit: 'PSI', value: 73);
+      final updated = original.copyWith(value: 80, unit: 'bar');
+      expect(updated.id, original.id);
+      expect(updated.value, 80);
+      expect(updated.unit, 'bar');
+      expect(updated.name, 'Air');
+    });
+
+    test('copyWith clearValue nulls the value', () {
+      final original = Field(name: 'Air', unit: 'PSI', value: 73);
+      final cleared = original.copyWith(clearValue: true);
+      expect(cleared.value, isNull);
+    });
+  });
+
+  group('SectionSettings', () {
+    test('roundtrips through JSON with active and deleted fields', () {
+      final active = Field(name: 'Air Pressure', unit: 'PSI', value: 100);
+      final deleted = Field(name: 'Sag', unit: '%', deleted: true);
+      final section = SectionSettings(
+        fields: [active, deleted],
+        layout: [
+          [active.id]
+        ],
+        serialNumber: 'SN-123',
+        infoUrl: 'https://example.com',
+      );
+      final restored = SectionSettings.fromJson(section.toJson());
+      expect(restored.fields, hasLength(2));
+      expect(restored.activeFields.toList(), hasLength(1));
+      expect(restored.activeFields.first.name, 'Air Pressure');
+      expect(restored.serialNumber, 'SN-123');
+      expect(restored.infoUrl, 'https://example.com');
+      expect(restored.layout, [
+        [active.id]
+      ]);
+    });
+
+    test('hasAnyField true when there are active fields', () {
+      final f = Field(name: 'Air', unit: 'PSI', value: 100);
+      final section = SectionSettings(fields: [
+        f
+      ], layout: [
+        [f.id]
+      ]);
+      expect(section.hasAnyField, isTrue);
+    });
+
+    test('hasAnyField false when all fields are deleted', () {
+      final f = Field(name: 'Air', unit: 'PSI', deleted: true);
+      final section = SectionSettings(fields: [f], layout: []);
+      expect(section.hasAnyField, isFalse);
+    });
+
+    test('hasAnyField true when only serialNumber set', () {
+      final section =
+          SectionSettings(fields: [], layout: [], serialNumber: 'SN-123');
+      expect(section.hasAnyField, isTrue);
+    });
+
+    test('hasAnyField false when empty', () {
+      expect(SectionSettings(fields: [], layout: []).hasAnyField, isFalse);
+    });
+
+    test('fieldById returns field by id', () {
+      final f = Field(name: 'Air', unit: 'PSI', value: 100);
+      final section = SectionSettings(fields: [
+        f
+      ], layout: [
+        [f.id]
+      ]);
+      expect(section.fieldById(f.id), isNotNull);
+      expect(section.fieldById(f.id)!.name, 'Air');
+    });
+
+    test('fieldById returns null for unknown id', () {
+      final section = SectionSettings(fields: [], layout: []);
+      expect(section.fieldById('no-such-id'), isNull);
+    });
+
+    test('fieldById returns deleted fields too', () {
+      final f = Field(name: 'Air', unit: 'PSI', deleted: true);
+      final section = SectionSettings(fields: [f], layout: []);
+      expect(section.fieldById(f.id), isNotNull);
+    });
+
+    test('clone produces independent copy', () {
+      final f = Field(name: 'Air', unit: 'PSI', value: 100);
+      final original = SectionSettings(fields: [
+        f
+      ], layout: [
+        [f.id]
+      ], serialNumber: 'SN-1');
+      final clone = original.clone();
+      clone.fields.add(Field(name: 'Sag', unit: '%', value: 25));
+      expect(original.fields, hasLength(1));
     });
   });
 
@@ -135,13 +134,13 @@ void main() {
     test('roundtrips through JSON', () {
       final change = SettingChange(
         suspensionType: SuspensionType.fork,
-        settingType: SettingType.airPressure,
+        fieldId: 'field-uuid-123',
         oldValue: 100,
         newValue: 120,
       );
       final restored = SettingChange.fromJson(change.toJson());
       expect(restored.suspensionType, SuspensionType.fork);
-      expect(restored.settingType, SettingType.airPressure);
+      expect(restored.fieldId, 'field-uuid-123');
       expect(restored.oldValue, 100);
       expect(restored.newValue, 120);
     });
@@ -149,7 +148,7 @@ void main() {
     test('roundtrips decimal old/new values through JSON', () {
       final change = SettingChange(
         suspensionType: SuspensionType.tyre,
-        settingType: SettingType.frontTyrePressure,
+        fieldId: 'tyre-field-id',
         oldValue: 27.5,
         newValue: 28.25,
       );
@@ -158,10 +157,10 @@ void main() {
       expect(restored.newValue, 28.25);
     });
 
-    test('roundtrips with null values (new setup, no prior value)', () {
+    test('roundtrips with null values', () {
       final change = SettingChange(
         suspensionType: SuspensionType.shock,
-        settingType: SettingType.hsc,
+        fieldId: 'field-id',
         oldValue: null,
         newValue: null,
       );
@@ -173,7 +172,7 @@ void main() {
     test('roundtrips with enabled/disabled toggle', () {
       final change = SettingChange(
         suspensionType: SuspensionType.fork,
-        settingType: SettingType.hsc,
+        fieldId: 'field-id',
         oldValue: null,
         newValue: 5,
         oldEnabled: false,
@@ -184,6 +183,18 @@ void main() {
       expect(restored.newEnabled, true);
       expect(restored.newValue, 5);
     });
+
+    test('inverted swaps old/new', () {
+      final change = SettingChange(
+        suspensionType: SuspensionType.fork,
+        fieldId: 'field-id',
+        oldValue: 100,
+        newValue: 120,
+      );
+      final inv = change.inverted();
+      expect(inv.oldValue, 120);
+      expect(inv.newValue, 100);
+    });
   });
 
   group('SettingChanges', () {
@@ -193,7 +204,7 @@ void main() {
         changes: [
           SettingChange(
             suspensionType: SuspensionType.fork,
-            settingType: SettingType.sag,
+            fieldId: 'field-id',
             oldValue: 25,
             newValue: 28,
           ),
@@ -222,26 +233,19 @@ void main() {
 
   group('Setup', () {
     test('roundtrips through JSON preserving all fields', () {
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 110);
+      final sagField = Field(name: 'Sag', unit: '%', value: 25);
       final original = Setup(
         id: 'test-id-123',
         name: 'Enduro race',
-        fork: Settings(
-          airPressure: const Field(value: 110, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 8, unit: 'Clicks'),
-          lsr: const Field(value: 6, unit: 'Clicks'),
-          hsc: const Field(value: 3, unit: 'Clicks'),
+        fork: SectionSettings(
+          fields: [airField, sagField],
+          layout: [
+            [airField.id, sagField.id]
+          ],
         ),
-        shock: Settings(
-          airPressure: const Field(value: 200, unit: 'PSI'),
-          sag: const Field(value: 30, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        tyres: Tyres(
-          front: const Field(value: 28, unit: 'PSI'),
-          rear: const Field(value: 26, unit: 'PSI'),
-        ),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [
           SettingChanges(
             changes: [],
@@ -254,32 +258,28 @@ void main() {
       final restored = Setup.fromJson(original.toJson());
       expect(restored.id, 'test-id-123');
       expect(restored.name, 'Enduro race');
-      expect(restored.fork.airPressure?.value, 110);
-      expect(restored.fork.hsc?.value, 3);
-      expect(restored.fork.hsr, isNull);
-      expect(restored.shock.sag?.value, 30);
+      expect(
+          restored.fork.activeFields
+              .firstWhere((f) => f.name == 'Air Pressure')
+              .value,
+          110);
       expect(restored.history, hasLength(1));
       expect(restored.history.first.comment, 'Setup creation');
       expect(restored.history.first.isCreationEntry, isTrue);
     });
 
     test('clone with history produces independent copy with new id', () {
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 100);
       final original = Setup(
         id: 'original-id',
         name: 'Base setup',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'PSI'),
-          sag: const Field(value: 20, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
+        fork: SectionSettings(fields: [
+          f
+        ], layout: [
+          [f.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [
           SettingChanges(changes: [], date: DateTime.now(), comment: 'initial'),
         ],
@@ -290,106 +290,18 @@ void main() {
       expect(clone.history, hasLength(1));
     });
 
-    test('copyMutable preserves history entry ids', () {
-      final entry = SettingChanges(changes: [], date: DateTime.now());
-      final original = Setup(
-        id: 'original-id',
-        name: 'Test',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
-        history: [entry],
-      );
-      final copy = original.copyMutable();
-      expect(copy.history.first.id, entry.id);
-    });
-
-    test('deserializes legacy JSON without tyres key as empty tyres', () {
-      final json = {
-        'id': 'legacy-id',
-        'name': 'Legacy setup',
-        'fork': {
-          'airPressure': {'value': 100, 'unit': 'PSI'},
-          'sag': {'value': 25, 'unit': '%'},
-          'volumeSpacer': null,
-          'lsc': {'value': 8, 'unit': 'Clicks'},
-          'hsc': null,
-          'lsr': {'value': 6, 'unit': 'Clicks'},
-          'hsr': null,
-        },
-        'shock': {
-          'airPressure': {'value': 180, 'unit': 'PSI'},
-          'sag': {'value': 30, 'unit': '%'},
-          'volumeSpacer': null,
-          'lsc': {'value': 5, 'unit': 'Clicks'},
-          'hsc': null,
-          'lsr': {'value': 4, 'unit': 'Clicks'},
-          'hsr': null,
-        },
-        // no 'tyres' key — simulates a pre-tyre config
-        'history': [],
-      };
-      final setup = Setup.fromJson(json);
-      expect(setup.tyres.front, isNull);
-      expect(setup.tyres.rear, isNull);
-    });
-
-    test('roundtrips a setup containing decimal field values', () {
-      final original = Setup(
-        id: 'decimal-id',
-        name: 'Decimal setup',
-        fork: Settings(
-          airPressure: const Field(value: 73.5, unit: 'PSI'),
-          sag: const Field(value: 17, unit: '%'),
-          lsc: const Field(value: 8, unit: 'Clicks'),
-          lsr: const Field(value: 6, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 165, unit: 'PSI'),
-          sag: const Field(value: 27, unit: '%'),
-          lsc: const Field(value: 8, unit: 'Clicks'),
-          lsr: const Field(value: 8, unit: 'Clicks'),
-        ),
-        tyres: Tyres(
-          front: const Field(value: 22.5, unit: 'PSI'),
-          rear: const Field(value: 24.75, unit: 'PSI'),
-        ),
-        history: [],
-      );
-      final restored = Setup.fromJson(original.toJson());
-      expect(restored.fork.airPressure?.value, 73.5);
-      expect(restored.tyres.front?.value, 22.5);
-      expect(restored.tyres.rear?.value, 24.75);
-      expect(restored.fork.sag?.value, isA<int>());
-    });
-
     test('clone without history produces empty history', () {
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 100);
       final original = Setup(
         id: 'original-id',
         name: 'Base setup',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'PSI'),
-          sag: const Field(value: 20, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
+        fork: SectionSettings(fields: [
+          f
+        ], layout: [
+          [f.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [
           SettingChanges(changes: [], date: DateTime.now()),
         ],
@@ -397,63 +309,98 @@ void main() {
       final clone = original.clone(false);
       expect(clone.history, isEmpty);
     });
+
+    test('copyMutable preserves history entry ids', () {
+      final entry = SettingChanges(changes: [], date: DateTime.now());
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 100);
+      final original = Setup(
+        id: 'original-id',
+        name: 'Test',
+        fork: SectionSettings(fields: [
+          f
+        ], layout: [
+          [f.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
+        history: [entry],
+      );
+      final copy = original.copyMutable();
+      expect(copy.history.first.id, entry.id);
+    });
   });
 
   group('computeUndo', () {
-    Setup makeSetup({
-      num forkAir = 110,
-      num forkLsc = 10,
+    late String airId;
+    late String lscId;
+    late String frontTyreId;
+
+    late Setup Function({
+      num forkAir,
+      num forkLsc,
       num? frontTyre,
-      num? shock,
-    }) =>
-        Setup(
+    }) makeSetup;
+
+    setUp(() {
+      airId = 'air-pressure-id';
+      lscId = 'lsc-id';
+      frontTyreId = 'front-tyre-id';
+
+      makeSetup = ({num forkAir = 110, num forkLsc = 10, num? frontTyre}) {
+        final airField =
+            Field(id: airId, name: 'Air Pressure', unit: 'PSI', value: forkAir);
+        final lscField =
+            Field(id: lscId, name: 'LSC', unit: 'Clicks', value: forkLsc);
+        final tyreField = frontTyre != null
+            ? Field(
+                id: frontTyreId,
+                name: 'Front Tyre',
+                unit: 'PSI',
+                value: frontTyre)
+            : Field(
+                id: frontTyreId,
+                name: 'Front Tyre',
+                unit: 'PSI',
+                deleted: true);
+
+        return Setup(
           id: 'test',
           name: 'Test',
-          fork: Settings(
-            airPressure: Field(value: forkAir, unit: 'PSI'),
-            sag: const Field(value: 25, unit: '%'),
-            lsc: Field(value: forkLsc, unit: 'Clicks'),
-            lsr: const Field(value: 4, unit: 'Clicks'),
+          fork: SectionSettings(
+            fields: [airField, lscField],
+            layout: [
+              [airField.id, lscField.id]
+            ],
           ),
-          shock: Settings(
-            airPressure: Field(value: shock ?? 150, unit: 'PSI'),
-            sag: const Field(value: 25, unit: '%'),
-            lsc: const Field(value: 3, unit: 'Clicks'),
-            lsr: const Field(value: 2, unit: 'Clicks'),
-          ),
-          tyres: Tyres(
-            front:
-                frontTyre != null ? Field(value: frontTyre, unit: 'PSI') : null,
+          shock: SectionSettings(fields: [], layout: []),
+          tyres: SectionSettings(
+            fields: [tyreField],
+            layout: frontTyre != null
+                ? [
+                    [tyreField.id]
+                  ]
+                : [],
           ),
           history: [],
         );
-
-    SettingChange makeChange({
-      SuspensionType suspension = SuspensionType.fork,
-      SettingType setting = SettingType.airPressure,
-      num? oldValue,
-      num? newValue,
-      bool? oldEnabled,
-      bool? newEnabled,
-    }) =>
-        SettingChange(
-          suspensionType: suspension,
-          settingType: setting,
-          oldValue: oldValue,
-          newValue: newValue,
-          oldEnabled: oldEnabled,
-          newEnabled: newEnabled,
-        );
+      };
+    });
 
     test('returns undo change when value differs from old value', () {
       final setup = makeSetup(forkAir: 110);
       final entry = SettingChanges(
-        changes: [makeChange(oldValue: 100, newValue: 110)],
+        changes: [
+          SettingChange(
+              suspensionType: SuspensionType.fork,
+              fieldId: airId,
+              oldValue: 100,
+              newValue: 110)
+        ],
         date: DateTime.now(),
       );
       final result = setup.computeUndo(entry);
       expect(result, hasLength(1));
-      expect(result.first.settingType, SettingType.airPressure);
+      expect(result.first.fieldId, airId);
       expect(result.first.oldValue, 110);
       expect(result.first.newValue, 100);
     });
@@ -462,7 +409,13 @@ void main() {
         () {
       final setup = makeSetup(forkAir: 100);
       final entry = SettingChanges(
-        changes: [makeChange(oldValue: 100, newValue: 110)],
+        changes: [
+          SettingChange(
+              suspensionType: SuspensionType.fork,
+              fieldId: airId,
+              oldValue: 100,
+              newValue: 110)
+        ],
         date: DateTime.now(),
       );
       expect(setup.computeUndo(entry), isEmpty);
@@ -485,16 +438,16 @@ void main() {
     });
 
     test('undo of enable: disables field and sets newValue to null', () {
-      // change was: disabled→enabled (oldEnabled=false, newEnabled=true, newValue=120)
-      // current state: field enabled at 120; undo should disable it
       final setup = makeSetup(forkAir: 120);
       final entry = SettingChanges(
         changes: [
-          makeChange(
+          SettingChange(
+              suspensionType: SuspensionType.fork,
+              fieldId: airId,
               oldValue: null,
               newValue: 120,
               oldEnabled: false,
-              newEnabled: true),
+              newEnabled: true)
         ],
         date: DateTime.now(),
       );
@@ -505,34 +458,31 @@ void main() {
     });
 
     test('undo of disable: re-enables field with old value', () {
-      // change was: enabled→disabled (oldEnabled=true, oldValue=100, newEnabled=false)
-      // current state: field disabled; undo should enable it at 100
+      final disabledField =
+          Field(id: airId, name: 'Air Pressure', unit: 'PSI', deleted: true);
+      final sagField = Field(name: 'Sag', unit: '%', value: 25);
       final setup = Setup(
         id: 'test',
         name: 'Test',
-        fork: Settings(
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 4, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
+        fork: SectionSettings(fields: [
+          disabledField,
+          sagField
+        ], layout: [
+          [sagField.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [],
       );
       final entry = SettingChanges(
         changes: [
-          makeChange(
-            setting: SettingType.airPressure,
-            oldValue: 100,
-            newValue: null,
-            oldEnabled: true,
-            newEnabled: false,
-          ),
+          SettingChange(
+              suspensionType: SuspensionType.fork,
+              fieldId: airId,
+              oldValue: 100,
+              newValue: null,
+              oldEnabled: true,
+              newEnabled: false)
         ],
         date: DateTime.now(),
       );
@@ -546,12 +496,11 @@ void main() {
       final setup = makeSetup(frontTyre: 24);
       final entry = SettingChanges(
         changes: [
-          makeChange(
-            suspension: SuspensionType.tyre,
-            setting: SettingType.frontTyrePressure,
-            oldValue: 22,
-            newValue: 24,
-          ),
+          SettingChange(
+              suspensionType: SuspensionType.tyre,
+              fieldId: frontTyreId,
+              oldValue: 22,
+              newValue: 24)
         ],
         date: DateTime.now(),
       );
@@ -562,221 +511,152 @@ void main() {
     });
 
     test('handles multiple fields with partial no-ops', () {
-      // forkAir already at old value (100), forkLsc changed (8→10)
       final setup = makeSetup(forkAir: 100, forkLsc: 10);
       final entry = SettingChanges(
         changes: [
-          makeChange(
-              setting: SettingType.airPressure, oldValue: 100, newValue: 110),
-          makeChange(setting: SettingType.lsc, oldValue: 8, newValue: 10),
+          SettingChange(
+              suspensionType: SuspensionType.fork,
+              fieldId: airId,
+              oldValue: 100,
+              newValue: 110),
+          SettingChange(
+              suspensionType: SuspensionType.fork,
+              fieldId: lscId,
+              oldValue: 8,
+              newValue: 10),
         ],
         date: DateTime.now(),
       );
       final result = setup.computeUndo(entry);
       expect(result, hasLength(1));
-      expect(result.first.settingType, SettingType.lsc);
+      expect(result.first.fieldId, lscId);
       expect(result.first.newValue, 8);
     });
   });
 
   group('applyChanges', () {
-    test('updates fork field value', () {
-      final setup = Setup(
+    late String airId;
+
+    late Setup makeSetup;
+
+    setUp(() {
+      airId = 'air-pressure-id';
+      final airField =
+          Field(id: airId, name: 'Air Pressure', unit: 'PSI', value: 100);
+      makeSetup = Setup(
         id: 'test',
         name: 'Test',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
+        fork: SectionSettings(fields: [
+          airField
+        ], layout: [
+          [airId]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [],
       );
-      setup.applyChanges([
+    });
+
+    test('updates fork field value', () {
+      makeSetup.applyChanges([
         SettingChange(
-          suspensionType: SuspensionType.fork,
-          settingType: SettingType.airPressure,
-          oldValue: 100,
-          newValue: 90,
-        ),
+            suspensionType: SuspensionType.fork,
+            fieldId: airId,
+            oldValue: 100,
+            newValue: 90),
       ]);
-      expect(setup.fork.airPressure?.value, 90);
+      expect(makeSetup.fork.fieldById(airId)?.value, 90);
     });
 
     test('preserves existing field unit when updating value', () {
-      final setup = Setup(
-        id: 'test',
-        name: 'Test',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'bar'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
-        history: [],
-      );
-      setup.applyChanges([
+      makeSetup.applyChanges([
         SettingChange(
-          suspensionType: SuspensionType.fork,
-          settingType: SettingType.airPressure,
-          oldValue: 100,
-          newValue: 90,
-        ),
+            suspensionType: SuspensionType.fork,
+            fieldId: airId,
+            oldValue: 100,
+            newValue: 90),
       ]);
-      expect(setup.fork.airPressure?.unit, 'bar');
+      expect(makeSetup.fork.fieldById(airId)?.unit, 'PSI');
     });
 
-    test('disables field when newEnabled is false', () {
-      final setup = Setup(
-        id: 'test',
-        name: 'Test',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-          volumeSpacer: const Field(value: 2, unit: 'Spacers'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
-        history: [],
-      );
-      setup.applyChanges([
+    test('marks field deleted when newEnabled is false', () {
+      makeSetup.applyChanges([
         SettingChange(
-          suspensionType: SuspensionType.fork,
-          settingType: SettingType.volumeSpacer,
-          oldValue: 2,
-          newValue: null,
-          oldEnabled: true,
-          newEnabled: false,
-        ),
+            suspensionType: SuspensionType.fork,
+            fieldId: airId,
+            oldValue: 100,
+            newValue: null,
+            oldEnabled: true,
+            newEnabled: false),
       ]);
-      expect(setup.fork.volumeSpacer, isNull);
+      expect(makeSetup.fork.fieldById(airId)?.deleted, isTrue);
+      expect(makeSetup.fork.activeFields.toList(), isEmpty);
     });
 
-    test('enables field when newEnabled is true', () {
+    test('undeletes field when newEnabled is true', () {
+      final deletedField =
+          Field(id: airId, name: 'Air Pressure', unit: 'PSI', deleted: true);
       final setup = Setup(
         id: 'test',
         name: 'Test',
-        fork: Settings(
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
+        fork: SectionSettings(fields: [deletedField], layout: []),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [],
       );
       setup.applyChanges([
         SettingChange(
-          suspensionType: SuspensionType.fork,
-          settingType: SettingType.airPressure,
-          oldValue: null,
-          newValue: 100,
-          oldEnabled: false,
-          newEnabled: true,
-        ),
+            suspensionType: SuspensionType.fork,
+            fieldId: airId,
+            oldValue: null,
+            newValue: 100,
+            oldEnabled: false,
+            newEnabled: true),
       ]);
-      expect(setup.fork.airPressure?.value, 100);
-    });
-
-    test('updates tyre pressure', () {
-      final setup = Setup(
-        id: 'test',
-        name: 'Test',
-        fork: Settings(
-          airPressure: const Field(value: 100, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 5, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(front: const Field(value: 24, unit: 'PSI')),
-        history: [],
-      );
-      setup.applyChanges([
-        SettingChange(
-          suspensionType: SuspensionType.tyre,
-          settingType: SettingType.frontTyrePressure,
-          oldValue: 24,
-          newValue: 22,
-        ),
-      ]);
-      expect(setup.tyres.front?.value, 22);
-      expect(setup.tyres.front?.unit, 'PSI');
+      expect(setup.fork.fieldById(airId)?.deleted, isFalse);
+      expect(setup.fork.fieldById(airId)?.value, 100);
     });
   });
 
   group('computeUndo + applyChanges round-trip', () {
     test('undo restores setup to state before a value change', () {
+      final airId = 'air-id';
+      final lscId = 'lsc-id';
+      final airField =
+          Field(id: airId, name: 'Air Pressure', unit: 'PSI', value: 110);
+      final lscField = Field(id: lscId, name: 'LSC', unit: 'Clicks', value: 10);
       final setup = Setup(
         id: 'test',
         name: 'Test',
-        fork: Settings(
-          airPressure: const Field(value: 110, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 10, unit: 'Clicks'),
-          lsr: const Field(value: 4, unit: 'Clicks'),
-        ),
-        shock: Settings(
-          airPressure: const Field(value: 150, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-          lsc: const Field(value: 3, unit: 'Clicks'),
-          lsr: const Field(value: 2, unit: 'Clicks'),
-        ),
-        tyres: Tyres(),
+        fork: SectionSettings(fields: [
+          airField,
+          lscField
+        ], layout: [
+          [airId, lscId]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
         history: [],
       );
       final entry = SettingChanges(
         changes: [
           SettingChange(
-            suspensionType: SuspensionType.fork,
-            settingType: SettingType.airPressure,
-            oldValue: 100,
-            newValue: 110,
-          ),
+              suspensionType: SuspensionType.fork,
+              fieldId: airId,
+              oldValue: 100,
+              newValue: 110),
           SettingChange(
-            suspensionType: SuspensionType.fork,
-            settingType: SettingType.lsc,
-            oldValue: 8,
-            newValue: 10,
-          ),
+              suspensionType: SuspensionType.fork,
+              fieldId: lscId,
+              oldValue: 8,
+              newValue: 10),
         ],
         date: DateTime.now(),
       );
       final undoChanges = setup.computeUndo(entry);
       setup.applyChanges(undoChanges);
-      expect(setup.fork.airPressure?.value, 100);
-      expect(setup.fork.lsc?.value, 8);
+      expect(setup.fork.fieldById(airId)?.value, 100);
+      expect(setup.fork.fieldById(lscId)?.value, 8);
     });
   });
 }

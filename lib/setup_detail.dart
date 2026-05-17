@@ -32,9 +32,9 @@ class SetupDetail extends StatelessWidget {
       if (setup == null) {
         return const ErrorScreenWidget(message: 'Setup not found');
       } else {
-        final hasValueFields = setup.fork.hasAnyValueField ||
-            setup.shock.hasAnyValueField ||
-            setup.tyres.hasAnyField;
+        final hasValueFields = setup.fork.activeFields.isNotEmpty ||
+            setup.shock.activeFields.isNotEmpty ||
+            setup.tyres.activeFields.isNotEmpty;
 
         return Scaffold(
           appBar: AppBar(
@@ -83,19 +83,19 @@ class SetupDetail extends StatelessWidget {
                   if (setup.fork.hasAnyField) ...[
                     const TitleWithIcon(
                         title: 'Fork', icon: SuspensionIcons.fork),
-                    _ComponentInfo(settings: setup.fork),
-                    SettingTiles(settings: setup.fork),
+                    _ComponentInfo(section: setup.fork),
+                    SettingTiles(section: setup.fork),
                   ],
                   if (setup.shock.hasAnyField) ...[
                     const TitleWithIcon(
                         title: 'Shock', icon: SuspensionIcons.shock),
-                    _ComponentInfo(settings: setup.shock),
-                    SettingTiles(settings: setup.shock),
+                    _ComponentInfo(section: setup.shock),
+                    SettingTiles(section: setup.shock),
                   ],
                   if (setup.tyres.hasAnyField) ...[
                     const TitleWithIcon(
                         title: 'Tyres', icon: SuspensionIcons.tyre),
-                    TyreTiles(tyres: setup.tyres),
+                    SettingTiles(section: setup.tyres),
                   ],
                   if (setup.history.isNotEmpty) History(setup: setup),
                 ],
@@ -109,14 +109,14 @@ class SetupDetail extends StatelessWidget {
 }
 
 class _ComponentInfo extends StatelessWidget {
-  const _ComponentInfo({required this.settings});
+  const _ComponentInfo({required this.section});
 
-  final Settings settings;
+  final SectionSettings section;
 
   @override
   Widget build(BuildContext context) {
-    final sn = settings.serialNumber;
-    final url = settings.infoUrl;
+    final sn = section.serialNumber;
+    final url = section.infoUrl;
     if (sn == null && url == null) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
@@ -189,7 +189,7 @@ class _EmptySettings extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'Activate at least one field to see your settings here',
+              'No fields configured yet. Add fields in the setup configuration.',
               style: theme.textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),
@@ -197,7 +197,7 @@ class _EmptySettings extends StatelessWidget {
             FilledButton.icon(
               onPressed: onEdit,
               icon: const Icon(Icons.settings),
-              label: const Text('Edit setup'),
+              label: const Text('Configure setup'),
             ),
           ],
         ),
@@ -214,24 +214,16 @@ class History extends StatelessWidget {
 
   final Setup setup;
 
-  String _unit(SettingChange change, Setup setup) {
-    if (change.suspensionType == SuspensionType.tyre) {
-      return (change.settingType == SettingType.frontTyrePressure
-              ? setup.tyres.front?.unit
-              : setup.tyres.rear?.unit) ??
-          Settings.defaultUnits[change.settingType] ??
-          '';
-    }
-    final settings =
-        change.suspensionType == SuspensionType.fork ? setup.fork : setup.shock;
-    return settings.fieldFor(change.settingType)?.unit ??
-        Settings.defaultUnits[change.settingType] ??
-        '';
-  }
-
   String _changeText(SettingChange change, Setup setup) {
-    final unit = _unit(change, setup);
-    final label = change.settingType.label;
+    final section = switch (change.suspensionType) {
+      SuspensionType.fork => setup.fork,
+      SuspensionType.shock => setup.shock,
+      SuspensionType.tyre => setup.tyres,
+    };
+    final field = section.fieldById(change.fieldId);
+    final label = field?.name ?? 'Unknown field';
+    final unit = field?.unit ?? '';
+
     if (change.newEnabled == true) {
       return '$label: enabled (${change.newValue} $unit)'.trim();
     }

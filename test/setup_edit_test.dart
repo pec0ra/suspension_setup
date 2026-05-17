@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
-import 'package:suspension_setup/models/tyres.dart';
 import 'package:suspension_setup/setting_tiles.dart';
 import 'package:suspension_setup/setup_edit.dart';
 import 'package:suspension_setup/setup_storage_model.dart';
@@ -26,8 +25,6 @@ class _FakeStorageModel extends SetupStorageModel {
   }
 }
 
-// Push SetupEdit onto a parent Scaffold so the snackbar has somewhere to land
-// after SetupEdit pops.
 Widget _setupEditHarness(_FakeStorageModel model, Setup? setup) {
   return ChangeNotifierProvider<SetupStorageModel>.value(
     value: model,
@@ -47,7 +44,6 @@ Widget _setupEditHarness(_FakeStorageModel model, Setup? setup) {
   );
 }
 
-// Push ValueEdit onto a parent Scaffold for the same reason.
 Widget _valueEditHarness(_FakeStorageModel model, Setup setup) {
   return ChangeNotifierProvider<SetupStorageModel>.value(
     value: model,
@@ -64,6 +60,21 @@ Widget _valueEditHarness(_FakeStorageModel model, Setup setup) {
         ),
       ),
     ),
+  );
+}
+
+Setup _makeSetup({List<Field> forkFields = const []}) {
+  final ids = forkFields.map((f) => f.id).toList();
+  return Setup(
+    id: 'test',
+    name: 'Trail Setup',
+    fork: SectionSettings(
+      fields: List.from(forkFields),
+      layout: ids.isEmpty ? [] : [ids],
+    ),
+    shock: SectionSettings(fields: [], layout: []),
+    tyres: SectionSettings(fields: [], layout: []),
+    history: [],
   );
 }
 
@@ -98,32 +109,80 @@ void main() {
     });
   });
 
-  group('SetupEdit → ValueEdit cancel', () {
-    testWidgets('cancelling ValueEdit restores shared controller field values',
-        (tester) async {
+  group('SetupEdit FAB state', () {
+    testWidgets('shows Save tooltip when no new fields', (tester) async {
       final model = _FakeStorageModel();
-      final setup = Setup(
-        id: 'test',
-        name: 'Trail Setup',
-        fork: Settings(airPressure: const Field(value: 73, unit: 'PSI')),
-        shock: Settings(),
-        tyres: Tyres(),
-        history: [],
-      );
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [airField]);
 
       await tester.pumpWidget(_setupEditHarness(model, setup));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Enable Sag — _hasNewlyEnabled becomes true, FAB switches to arrow.
-      await tester.tap(find.text('Sag').first);
-      await tester.pump();
+      expect(find.byTooltip('Save setup'), findsOneWidget);
+    });
 
-      // Navigate to ValueEdit.
+    testWidgets('FAB switches to Edit values after adding a field',
+        (tester) async {
+      final model = _FakeStorageModel();
+
+      await tester.pumpWidget(_setupEditHarness(model, null));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // Tap the first "Add field" button (Fork section)
+      await tester.tap(find.text('Add field').first);
+      await tester.pumpAndSettle();
+
+      // Fill in the dialog
+      await tester.enterText(
+        find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(TextField),
+            )
+            .first,
+        'Air Pressure',
+      );
+      await tester.pump();
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Edit values'), findsOneWidget);
+    });
+  });
+
+  group('SetupEdit → ValueEdit cancel', () {
+    testWidgets('cancelling ValueEdit restores shared controller field values',
+        (tester) async {
+      final model = _FakeStorageModel();
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [airField]);
+
+      await tester.pumpWidget(_setupEditHarness(model, setup));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // Add a field to make FAB show "Edit values"
+      await tester.tap(find.text('Add field').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(TextField),
+            )
+            .first,
+        'Sag',
+      );
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      // Navigate to ValueEdit
       await tester.tap(find.byTooltip('Edit values'));
       await tester.pumpAndSettle();
 
-      // In ValueEdit: change the existing air-pressure value from 73 → 80.
+      // Change the existing air-pressure value from 73 → 80
       await tester.enterText(
         find.descendant(
           of: find.byType(FieldValueCard).first,
@@ -133,11 +192,11 @@ void main() {
       );
       await tester.pump();
 
-      // Cancel ValueEdit without saving.
+      // Cancel ValueEdit without saving
       await tester.pageBack();
       await tester.pumpAndSettle();
 
-      // Navigate to ValueEdit again — the value must be restored to 73.
+      // Navigate to ValueEdit again — the air pressure value must be restored
       await tester.tap(find.byTooltip('Edit values'));
       await tester.pumpAndSettle();
 
@@ -151,54 +210,25 @@ void main() {
     });
   });
 
-  group('SetupEdit → ValueEdit save (happy path)', () {
-    testWidgets(
-        'saving in ValueEdit persists the setup with the newly enabled field',
+  group('SetupEdit direct save', () {
+    testWidgets('saving with no new fields calls upsert directly',
         (tester) async {
       final model = _FakeStorageModel();
-      final setup = Setup(
-        id: 'test',
-        name: 'Trail Setup',
-        fork: Settings(airPressure: const Field(value: 73, unit: 'PSI')),
-        shock: Settings(),
-        tyres: Tyres(),
-        history: [],
-      );
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [airField]);
 
       await tester.pumpWidget(_setupEditHarness(model, setup));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Enable Sag → FAB becomes arrow.
-      await tester.tap(find.text('Sag').first);
-      await tester.pump();
+      expect(find.byTooltip('Save setup'), findsOneWidget);
 
-      // Navigate to ValueEdit.
-      await tester.tap(find.byTooltip('Edit values'));
+      await tester.tap(find.byTooltip('Save setup'));
       await tester.pumpAndSettle();
 
-      // Enter a value for the newly-enabled Sag field (second FieldValueCard).
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(FieldValueCard).at(1),
-          matching: find.byType(TextFormField),
-        ),
-        '25',
-      );
-      await tester.pump();
-
-      // Tap Save FAB → comment dialog appears.
-      await tester.tap(find.byTooltip('Save values'));
-      await tester.pumpAndSettle();
-
-      // Dismiss the comment dialog without adding a comment.
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
+      // No changes → no comment dialog → saved directly
       expect(model.lastUpserted, isNotNull);
-      expect(model.lastUpserted!.fork.airPressure?.value, 73);
-      expect(model.lastUpserted!.fork.sag?.value, 25);
-      expect(find.text('Setup saved successfully'), findsOneWidget);
+      expect(model.lastUpserted!.name, 'Trail Setup');
     });
   });
 
@@ -206,20 +236,14 @@ void main() {
     testWidgets('editing a value and saving persists the change',
         (tester) async {
       final model = _FakeStorageModel();
-      final setup = Setup(
-        id: 'test',
-        name: 'Trail Setup',
-        fork: Settings(airPressure: const Field(value: 73, unit: 'PSI')),
-        shock: Settings(),
-        tyres: Tyres(),
-        history: [],
-      );
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [airField]);
 
       await tester.pumpWidget(_valueEditHarness(model, setup));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Change air pressure from 73 to 80.
+      // Change air pressure from 73 to 80
       await tester.enterText(
         find.descendant(
           of: find.byType(FieldValueCard).first,
@@ -229,81 +253,37 @@ void main() {
       );
       await tester.pump();
 
-      // Tap Save FAB → comment dialog appears.
+      // Tap Save FAB → comment dialog appears
       await tester.tap(find.byTooltip('Save values'));
       await tester.pumpAndSettle();
 
-      // Dismiss the comment dialog.
+      // Dismiss the comment dialog
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(model.lastUpserted, isNotNull);
-      expect(model.lastUpserted!.fork.airPressure?.value, 80);
+      expect(
+        model.lastUpserted!.fork.activeFields
+            .firstWhere((f) => f.name == 'Air Pressure')
+            .value,
+        80,
+      );
       expect(find.text('Setup saved successfully'), findsOneWidget);
     });
 
     testWidgets('owns and disposes its own controller', (tester) async {
       final model = _FakeStorageModel();
-      final setup = Setup(
-        id: 'test',
-        name: 'Trail Setup',
-        fork: Settings(airPressure: const Field(value: 73, unit: 'PSI')),
-        shock: Settings(),
-        tyres: Tyres(),
-        history: [],
-      );
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [airField]);
 
       await tester.pumpWidget(_valueEditHarness(model, setup));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Replacing the widget tree disposes ValueEdit — no assertion errors from
-      // double-dispose if _ownsController is handled correctly.
+      // Replacing the widget tree disposes ValueEdit — no assertion errors
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
       await tester.pump();
-      // No exception thrown = controller was disposed exactly once.
-    });
-  });
-
-  group('SetupEdit direct save (no new fields)', () {
-    testWidgets('disabling a field saves without navigating to ValueEdit',
-        (tester) async {
-      final model = _FakeStorageModel();
-      final setup = Setup(
-        id: 'test',
-        name: 'Trail Setup',
-        fork: Settings(
-          airPressure: const Field(value: 73, unit: 'PSI'),
-          sag: const Field(value: 25, unit: '%'),
-        ),
-        shock: Settings(),
-        tyres: Tyres(),
-        history: [],
-      );
-
-      await tester.pumpWidget(_setupEditHarness(model, setup));
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-
-      // Disable Sag — no new fields enabled, FAB stays on 'Save setup'.
-      await tester.tap(find.text('Sag').first);
-      await tester.pump();
-
-      // No ValueEdit navigation expected: FAB has 'Save setup' tooltip.
-      expect(find.byTooltip('Save setup'), findsOneWidget);
-
-      // Tap Save FAB → comment dialog (disabling is a change).
-      await tester.tap(find.byTooltip('Save setup'));
-      await tester.pumpAndSettle();
-
-      // Dismiss the comment dialog.
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      expect(model.lastUpserted, isNotNull);
-      expect(model.lastUpserted!.fork.sag, isNull);
-      expect(model.lastUpserted!.fork.airPressure?.value, 73);
-      expect(find.text('Setup saved successfully'), findsOneWidget);
+      // No exception thrown = controller was disposed exactly once
     });
   });
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/setting_change.dart';
+import 'draggable_grid.dart';
 import 'models/setup_form_controller.dart';
 import 'models/setup.dart';
 import 'setting_tiles.dart';
@@ -28,47 +28,26 @@ class _SetupEditState extends State<SetupEdit> {
   late final SetupFormController _controller;
   final TextEditingController _commentController = TextEditingController();
 
-  List<FieldFormController> get _allFieldControllers => [
-        _controller.fork.airPressure,
-        _controller.fork.sag,
-        _controller.fork.volumeSpacer,
-        _controller.fork.lsc,
-        _controller.fork.hsc,
-        _controller.fork.lsr,
-        _controller.fork.hsr,
-        _controller.shock.airPressure,
-        _controller.shock.sag,
-        _controller.shock.volumeSpacer,
-        _controller.shock.lsc,
-        _controller.shock.hsc,
-        _controller.shock.lsr,
-        _controller.shock.hsr,
-        _controller.tyres.front,
-        _controller.tyres.rear,
-      ];
-
   @override
   void initState() {
     super.initState();
     _controller = SetupFormController(widget.setup);
-    for (final field in _allFieldControllers) {
-      field.enabled.addListener(_onEnabledChanged);
-    }
   }
-
-  void _onEnabledChanged() => setState(() {});
 
   @override
   void dispose() {
-    for (final field in _allFieldControllers) {
-      field.enabled.removeListener(_onEnabledChanged);
-    }
     _commentController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  bool get _hasNewlyEnabled => _controller.hasNewlyEnabledFields(widget.setup);
+  bool get _hasNewlyAdded => _controller.hasNewlyAddedFields();
+
+  List<FieldFormController> get _allFieldControllers => [
+        ..._controller.fork.fields,
+        ..._controller.shock.fields,
+        ..._controller.tyres.fields,
+      ];
 
   Future<void> _onSave(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
@@ -117,10 +96,82 @@ class _SetupEditState extends State<SetupEdit> {
     }
   }
 
+  void _showAddFieldDialog(
+      BuildContext context, SectionFormController section) {
+    showDialog<({String name, String unit})>(
+      context: context,
+      builder: (ctx) => const _AddFieldDialog(),
+    ).then((result) {
+      if (result != null) {
+        section.addField(result.name, result.unit);
+        setState(() {});
+      }
+    });
+  }
+
+  void _showEditFieldSheet(BuildContext context, SectionFormController section,
+      FieldFormController fieldCtrl) {
+    showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => _EditFieldSheet(
+        controller: fieldCtrl,
+        onDelete: () => Navigator.pop(ctx, true),
+      ),
+    ).then((deleted) {
+      if (deleted == true) {
+        section.removeField(fieldCtrl.id);
+      }
+      setState(() {});
+    });
+  }
+
+  Widget _buildSectionGrid(SectionFormController section) {
+    if (section.layout.isEmpty) return const SizedBox.shrink();
+    return DraggableGrid(
+      layout: section.layout,
+      itemBuilder: (id) {
+        final ctrl = section.fields.firstWhere((f) => f.id == id);
+        return FieldConfigTile(controller: ctrl);
+      },
+      onLayoutChanged: (newLayout) =>
+          setState(() => section.layout = newLayout),
+      onItemTap: (id) {
+        final ctrl = section.fields.firstWhere((f) => f.id == id);
+        _showEditFieldSheet(context, section, ctrl);
+      },
+    );
+  }
+
+  Widget _buildSection(
+    SectionFormController section, {
+    bool showComponentInfo = false,
+  }) {
+    return Column(
+      children: [
+        if (showComponentInfo)
+          _ComponentInfoFields(
+            serialNumberController: section.serialNumber,
+            infoUrlController: section.infoUrl,
+          ),
+        _buildSectionGrid(section),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: OutlinedButton.icon(
+            onPressed: () => _showAddFieldDialog(context, section),
+            icon: const Icon(Icons.add),
+            label: const Text('Add field'),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasNewlyEnabled = _hasNewlyEnabled;
+    final hasNewlyAdded = _hasNewlyAdded;
 
     return Scaffold(
       appBar: AppBar(
@@ -147,65 +198,12 @@ class _SetupEditState extends State<SetupEdit> {
                   },
                 ),
                 const TitleWithIcon(title: 'Fork', icon: SuspensionIcons.fork),
-                _ComponentInfoFields(
-                  serialNumberController: _controller.fork.serialNumber,
-                  infoUrlController: _controller.fork.infoUrl,
-                ),
-                FieldConfigCard(
-                    name: SettingType.airPressure.label,
-                    controller: _controller.fork.airPressure),
-                FieldConfigCard(
-                    name: SettingType.sag.label,
-                    controller: _controller.fork.sag),
-                FieldConfigCard(
-                    name: SettingType.volumeSpacer.label,
-                    controller: _controller.fork.volumeSpacer),
-                FieldConfigCard(
-                    name: SettingType.lsc.label,
-                    controller: _controller.fork.lsc),
-                FieldConfigCard (
-                    name: SettingType.hsc.label,
-                    controller: _controller.fork.hsc),
-                FieldConfigCard(
-                    name: SettingType.lsr.label,
-                    controller: _controller.fork.lsr),
-                FieldConfigCard(
-                    name: SettingType.hsr.label,
-                    controller: _controller.fork.hsr),
+                _buildSection(_controller.fork, showComponentInfo: true),
                 const TitleWithIcon(
                     title: 'Shock', icon: SuspensionIcons.shock),
-                _ComponentInfoFields(
-                  serialNumberController: _controller.shock.serialNumber,
-                  infoUrlController: _controller.shock.infoUrl,
-                ),
-                FieldConfigCard(
-                    name: SettingType.airPressure.label,
-                    controller: _controller.shock.airPressure),
-                FieldConfigCard(
-                    name: SettingType.sag.label,
-                    controller: _controller.shock.sag),
-                FieldConfigCard(
-                    name: SettingType.volumeSpacer.label,
-                    controller: _controller.shock.volumeSpacer),
-                FieldConfigCard(
-                    name: SettingType.lsc.label,
-                    controller: _controller.shock.lsc),
-                FieldConfigCard(
-                    name: SettingType.hsc.label,
-                    controller: _controller.shock.hsc),
-                FieldConfigCard(
-                    name: SettingType.lsr.label,
-                    controller: _controller.shock.lsr),
-                FieldConfigCard(
-                    name: SettingType.hsr.label,
-                    controller: _controller.shock.hsr),
+                _buildSection(_controller.shock, showComponentInfo: true),
                 const TitleWithIcon(title: 'Tyres', icon: SuspensionIcons.tyre),
-                FieldConfigCard(
-                    name: SettingType.frontTyrePressure.label,
-                    controller: _controller.tyres.front),
-                FieldConfigCard(
-                    name: SettingType.rearTyrePressure.label,
-                    controller: _controller.tyres.rear),
+                _buildSection(_controller.tyres),
               ],
             ),
           ),
@@ -214,17 +212,15 @@ class _SetupEditState extends State<SetupEdit> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: theme.colorScheme.onPrimary,
-        onPressed: hasNewlyEnabled
+        onPressed: hasNewlyAdded
             ? () => _onForwardToValueEdit(context)
             : () => _onSave(context),
-        tooltip: hasNewlyEnabled ? 'Edit values' : 'Save setup',
+        tooltip: hasNewlyAdded ? 'Edit values' : 'Save setup',
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           transitionBuilder: (child, animation) {
             final isEntering =
-                (child.key as ValueKey<bool>).value == hasNewlyEnabled;
-            // Exiting: 0.0→0.5 turns (0°→180°), Entering: 0.5→1.0 (180°→360°)
-            // Both clockwise — exit hands off seamlessly to the entering icon.
+                (child.key as ValueKey<bool>).value == hasNewlyAdded;
             final rotateTween = isEntering
                 ? Tween(begin: 0.5, end: 1.0)
                 : Tween(begin: 0.5, end: 0.0);
@@ -237,8 +233,8 @@ class _SetupEditState extends State<SetupEdit> {
             );
           },
           child: Icon(
-            hasNewlyEnabled ? Icons.arrow_forward : Icons.save,
-            key: ValueKey(hasNewlyEnabled),
+            hasNewlyAdded ? Icons.arrow_forward : Icons.save,
+            key: ValueKey(hasNewlyAdded),
           ),
         ),
       ),
@@ -297,6 +293,111 @@ class _ComponentInfoFields extends StatelessWidget {
                   validator: validateInfoUrl,
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddFieldDialog extends StatefulWidget {
+  const _AddFieldDialog();
+
+  @override
+  State<_AddFieldDialog> createState() => _AddFieldDialogState();
+}
+
+class _AddFieldDialogState extends State<_AddFieldDialog> {
+  final _nameCtrl = TextEditingController();
+  final _unitCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _unitCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add field'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameCtrl,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Field name'),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _unitCtrl,
+            decoration: const InputDecoration(labelText: 'Unit (optional)'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            final name = _nameCtrl.text.trim();
+            if (name.isEmpty) return;
+            Navigator.pop(context, (name: name, unit: _unitCtrl.text.trim()));
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditFieldSheet extends StatelessWidget {
+  const _EditFieldSheet({
+    required this.controller,
+    required this.onDelete,
+  });
+
+  final FieldFormController controller;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Edit field', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 16),
+          TextField(
+            controller: controller.name,
+            decoration: const InputDecoration(labelText: 'Field name'),
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller.unit,
+            decoration: const InputDecoration(labelText: 'Unit (optional)'),
+          ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete field'),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
             ),
           ),
         ],

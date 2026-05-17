@@ -1,16 +1,14 @@
-import 'package:suspension_setup/models/settings.dart';
-import 'package:suspension_setup/models/tyres.dart';
 import 'package:uuid/uuid.dart';
 
-import 'field.dart';
 import 'setting_change.dart';
+import 'settings.dart';
 
 class Setup {
   final String id;
   String name;
-  final Settings fork;
-  final Settings shock;
-  final Tyres tyres;
+  final SectionSettings fork;
+  final SectionSettings shock;
+  final SectionSettings tyres;
   final List<SettingChanges> history;
 
   Setup({
@@ -26,9 +24,9 @@ class Setup {
     return Setup(
       id: json['id'],
       name: json['name'],
-      fork: Settings.fromJson(json['fork']),
-      shock: Settings.fromJson(json['shock']),
-      tyres: Tyres.fromJson(json['tyres'] as Map<String, dynamic>?),
+      fork: SectionSettings.fromJson(json['fork']),
+      shock: SectionSettings.fromJson(json['shock']),
+      tyres: SectionSettings.fromJson(json['tyres']),
       history: List<SettingChanges>.from(
           json['history'].map((e) => SettingChanges.fromJson(e))),
     );
@@ -41,7 +39,7 @@ class Setup {
       'fork': fork.toJson(),
       'shock': shock.toJson(),
       'tyres': tyres.toJson(),
-      'history': history.map((e) => e.toJson()).toList()
+      'history': history.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -49,32 +47,29 @@ class Setup {
     return Setup(
       id: const Uuid().v1(),
       name: '',
-      fork: Settings.getDefault(),
-      shock: Settings.getDefault(),
-      tyres: Tyres(),
+      fork: SectionSettings.getDefaultForSuspension(),
+      shock: SectionSettings.getDefaultForSuspension(),
+      tyres: SectionSettings.getDefaultForTyres(),
       history: [],
     );
   }
 
   Setup copyMutable() => Setup.fromJson(toJson());
 
+  SectionSettings _sectionFor(SuspensionType type) => switch (type) {
+        SuspensionType.fork => fork,
+        SuspensionType.shock => shock,
+        SuspensionType.tyre => tyres,
+      };
+
   List<SettingChange> computeUndo(SettingChanges historyEntry) {
     assert(!historyEntry.isCreationEntry, 'cannot undo a creation entry');
     final result = <SettingChange>[];
     for (final change in historyEntry.changes) {
-      final Field? currentField;
-      if (change.suspensionType == SuspensionType.tyre) {
-        currentField = change.settingType == SettingType.frontTyrePressure
-            ? tyres.front
-            : tyres.rear;
-      } else {
-        final settings =
-            change.suspensionType == SuspensionType.fork ? fork : shock;
-        currentField = settings.fieldFor(change.settingType);
-      }
-
-      final num? currentValue = currentField?.value;
-      final bool currentEnabled = currentField != null;
+      final section = _sectionFor(change.suspensionType);
+      final currentField = section.fieldById(change.fieldId);
+      final bool currentEnabled = currentField != null && !currentField.deleted;
+      final num? currentValue = currentEnabled ? currentField.value : null;
       final bool targetEnabled = change.oldEnabled ?? true;
 
       final bool enabledChanges = currentEnabled != targetEnabled;
@@ -85,7 +80,7 @@ class Setup {
 
       result.add(SettingChange(
         suspensionType: change.suspensionType,
-        settingType: change.settingType,
+        fieldId: change.fieldId,
         oldValue: currentValue,
         newValue: targetEnabled ? change.oldValue : null,
         oldEnabled: enabledChanges ? currentEnabled : null,
@@ -97,40 +92,33 @@ class Setup {
 
   void applyChanges(List<SettingChange> changes) {
     for (final change in changes) {
+      final section = _sectionFor(change.suspensionType);
       final bool targetEnabled = change.newEnabled ?? true;
       final num? targetValue = change.newValue;
       assert(!targetEnabled || targetValue != null,
           'targetValue must not be null when targetEnabled is true');
       if (targetEnabled && targetValue == null) continue;
 
-      if (change.suspensionType == SuspensionType.tyre) {
-        final isFront = change.settingType == SettingType.frontTyrePressure;
-        final currentField = isFront ? tyres.front : tyres.rear;
-        final newField = targetEnabled
-            ? Field(
-                value: targetValue!,
-                unit: currentField?.unit ??
-                    Settings.defaultUnits[change.settingType] ??
-                    'PSI')
-            : null;
-        if (isFront) {
-          tyres.front = newField;
-        } else {
-          tyres.rear = newField;
+      final idx = section.fields.indexWhere((f) => f.id == change.fieldId);
+      if (idx < 0) continue;
+
+      if (targetEnabled) {
+        section.fields[idx] = section.fields[idx].copyWith(
+          value: targetValue,
+          deleted: false,
+        );
+        if (!section.layout.any((row) => row.contains(change.fieldId))) {
+          section.layout.add([change.fieldId]);
         }
       } else {
-        final settings =
-            change.suspensionType == SuspensionType.fork ? fork : shock;
-        if (targetEnabled) {
-          final currentField = settings.fieldFor(change.settingType);
-          final unit = currentField?.unit ??
-              Settings.defaultUnits[change.settingType] ??
-              '';
-          settings.setField(
-              change.settingType, Field(value: targetValue!, unit: unit));
-        } else {
-          settings.setField(change.settingType, null);
-        }
+        section.fields[idx] = section.fields[idx].copyWith(
+          deleted: true,
+          clearValue: true,
+        );
+        section.layout = section.layout
+            .map((row) => row.where((id) => id != change.fieldId).toList())
+            .where((row) => row.isNotEmpty)
+            .toList();
       }
     }
   }

@@ -6,26 +6,33 @@ import 'package:suspension_setup/migrations/migrator.dart';
 import 'package:suspension_setup/models/field.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
-import 'package:suspension_setup/models/tyres.dart';
 import 'package:suspension_setup/setup_file_utils.dart';
 
 Setup _makeSetup(String id, String name) {
+  final forkFields = [
+    Field(name: 'Air Pressure', unit: 'PSI', value: 100),
+    Field(name: 'Sag', unit: '%', value: 25),
+    Field(name: 'Low Speed Compression', unit: 'Clicks', value: 8),
+    Field(name: 'Low Speed Rebound', unit: 'Clicks', value: 6),
+  ];
+  final shockFields = [
+    Field(name: 'Air Pressure', unit: 'PSI', value: 180),
+    Field(name: 'Sag', unit: '%', value: 30),
+    Field(name: 'Low Speed Compression', unit: 'Clicks', value: 5),
+    Field(name: 'Low Speed Rebound', unit: 'Clicks', value: 4),
+  ];
   return Setup(
     id: id,
     name: name,
-    fork: Settings(
-      airPressure: const Field(value: 100, unit: 'PSI'),
-      sag: const Field(value: 25, unit: '%'),
-      lsc: const Field(value: 8, unit: 'Clicks'),
-      lsr: const Field(value: 6, unit: 'Clicks'),
+    fork: SectionSettings(
+      fields: forkFields,
+      layout: [forkFields.map((f) => f.id).toList()],
     ),
-    shock: Settings(
-      airPressure: const Field(value: 180, unit: 'PSI'),
-      sag: const Field(value: 30, unit: '%'),
-      lsc: const Field(value: 5, unit: 'Clicks'),
-      lsr: const Field(value: 4, unit: 'Clicks'),
+    shock: SectionSettings(
+      fields: shockFields,
+      layout: [shockFields.map((f) => f.id).toList()],
     ),
-    tyres: Tyres(),
+    tyres: SectionSettings(fields: [], layout: []),
     history: [],
   );
 }
@@ -48,7 +55,7 @@ void main() {
       expect(result, isNull);
     });
 
-    test('reads and parses valid v2 setup file', () async {
+    test('reads and parses valid setup file', () async {
       final setup = _makeSetup('id-1', 'Trail setup');
       final filePath = '${tempDir.path}/setups.json';
       await SetupFileUtil.writeSetups({'id-1': setup}, filePath);
@@ -58,10 +65,17 @@ void main() {
       expect(result, isNotNull);
       expect(result!.length, 1);
       expect(result['id-1']?.name, 'Trail setup');
-      expect(result['id-1']?.fork.airPressure?.value, 100);
+      expect(
+        result['id-1']
+            ?.fork
+            .activeFields
+            .firstWhere((f) => f.name == 'Air Pressure')
+            .value,
+        100,
+      );
     });
 
-    test('migrates v1 file to v2 on read', () async {
+    test('migrates v1 file to v4 on read', () async {
       final filePath = '${tempDir.path}/v1setups.json';
       final v1Json = jsonEncode({
         'id-1': {
@@ -93,11 +107,22 @@ void main() {
       final result = await SetupFileUtil.readSetups(filePath);
 
       expect(result, isNotNull);
-      expect(result!['id-1']?.fork.airPressure?.value, 100);
-      expect(result['id-1']?.fork.airPressure?.unit, 'PSI');
-      expect(result['id-1']?.fork.hsc, isNull);
+      final fork = result!['id-1']!.fork;
+      expect(
+        fork.activeFields.firstWhere((f) => f.name == 'Air Pressure').value,
+        100,
+      );
+      expect(
+        fork.activeFields.firstWhere((f) => f.name == 'Air Pressure').unit,
+        'PSI',
+      );
+      // hsc was null in v1 so it should be deleted (not active)
+      expect(
+        fork.activeFields.any((f) => f.name == 'High Speed Compression'),
+        isFalse,
+      );
 
-      // File should have been rewritten in v2 format
+      // File should have been rewritten in v4 format
       final rewritten = jsonDecode(await File(filePath).readAsString());
       expect(rewritten['schemaVersion'], currentSchemaVersion);
     });

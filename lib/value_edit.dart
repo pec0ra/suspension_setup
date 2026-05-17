@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/setting_change.dart';
 import 'models/setup_form_controller.dart';
 import 'models/setup.dart';
 import 'setting_tiles.dart';
@@ -72,49 +71,38 @@ class _ValueEditState extends State<ValueEdit> {
     );
   }
 
+  Widget _sectionRows(SectionFormController section) {
+    final rows = section.layoutControllers;
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        for (final row in rows)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final ctrl in row)
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
+                      child: FieldValueCard(controller: ctrl),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ctrl = _controller;
-
-    Widget group(List<({String name, FieldFormController ctrl})> specs) {
-      final enabled = specs.where((e) => e.ctrl.enabled.value).toList();
-      if (enabled.isEmpty) return const SizedBox.shrink();
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final e in enabled)
-            Expanded(
-              child: Card(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  child: FieldValueCard(name: e.name, controller: e.ctrl),
-                ),
-              ),
-            ),
-        ],
-      );
-    }
-
-    final hasFork = ctrl.fork.airPressure.enabled.value ||
-        ctrl.fork.sag.enabled.value ||
-        ctrl.fork.volumeSpacer.enabled.value ||
-        ctrl.fork.lsc.enabled.value ||
-        ctrl.fork.hsc.enabled.value ||
-        ctrl.fork.lsr.enabled.value ||
-        ctrl.fork.hsr.enabled.value;
-
-    final hasShock = ctrl.shock.airPressure.enabled.value ||
-        ctrl.shock.sag.enabled.value ||
-        ctrl.shock.volumeSpacer.enabled.value ||
-        ctrl.shock.lsc.enabled.value ||
-        ctrl.shock.hsc.enabled.value ||
-        ctrl.shock.lsr.enabled.value ||
-        ctrl.shock.hsr.enabled.value;
-
-    final hasTyres =
-        ctrl.tyres.front.enabled.value || ctrl.tyres.rear.enabled.value;
+    final hasFork = ctrl.fork.layoutControllers.isNotEmpty;
+    final hasShock = ctrl.shock.layoutControllers.isNotEmpty;
+    final hasTyres = ctrl.tyres.layoutControllers.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -130,62 +118,17 @@ class _ValueEditState extends State<ValueEdit> {
                 if (hasFork) ...[
                   const TitleWithIcon(
                       title: 'Fork', icon: SuspensionIcons.fork),
-                  group([
-                    (
-                      name: SettingType.airPressure.label,
-                      ctrl: ctrl.fork.airPressure
-                    ),
-                    (name: SettingType.sag.label, ctrl: ctrl.fork.sag),
-                    (
-                      name: SettingType.volumeSpacer.label,
-                      ctrl: ctrl.fork.volumeSpacer
-                    ),
-                  ]),
-                  group([
-                    (name: SettingType.lsc.label, ctrl: ctrl.fork.lsc),
-                    (name: SettingType.hsc.label, ctrl: ctrl.fork.hsc),
-                  ]),
-                  group([
-                    (name: SettingType.lsr.label, ctrl: ctrl.fork.lsr),
-                    (name: SettingType.hsr.label, ctrl: ctrl.fork.hsr),
-                  ]),
+                  _sectionRows(ctrl.fork),
                 ],
                 if (hasShock) ...[
                   const TitleWithIcon(
                       title: 'Shock', icon: SuspensionIcons.shock),
-                  group([
-                    (
-                      name: SettingType.airPressure.label,
-                      ctrl: ctrl.shock.airPressure
-                    ),
-                    (name: SettingType.sag.label, ctrl: ctrl.shock.sag),
-                    (
-                      name: SettingType.volumeSpacer.label,
-                      ctrl: ctrl.shock.volumeSpacer
-                    ),
-                  ]),
-                  group([
-                    (name: SettingType.lsc.label, ctrl: ctrl.shock.lsc),
-                    (name: SettingType.hsc.label, ctrl: ctrl.shock.hsc),
-                  ]),
-                  group([
-                    (name: SettingType.lsr.label, ctrl: ctrl.shock.lsr),
-                    (name: SettingType.hsr.label, ctrl: ctrl.shock.hsr),
-                  ]),
+                  _sectionRows(ctrl.shock),
                 ],
                 if (hasTyres) ...[
                   const TitleWithIcon(
                       title: 'Tyres', icon: SuspensionIcons.tyre),
-                  group([
-                    (
-                      name: SettingType.frontTyrePressure.label,
-                      ctrl: ctrl.tyres.front
-                    ),
-                    (
-                      name: SettingType.rearTyrePressure.label,
-                      ctrl: ctrl.tyres.rear
-                    ),
-                  ]),
+                  _sectionRows(ctrl.tyres),
                 ],
               ],
             ),
