@@ -20,7 +20,22 @@ class DraggableGrid extends StatefulWidget {
 }
 
 class _DraggableGridState extends State<DraggableGrid> {
+  int _draggingCount = 0;
+  bool get _isDragging => _draggingCount > 0;
+  _DropTarget? _hoveredTarget;
+
+  bool _isHoveredInRow(int r, int c) {
+    final t = _hoveredTarget;
+    return t is _InRowTarget && t.rowIndex == r && t.position == c;
+  }
+
+  bool _isHoveredBetweenRows(int p) {
+    final t = _hoveredTarget;
+    return t is _NewRowTarget && t.position == p;
+  }
+
   void _drop(String id, _DropTarget target) {
+    setState(() => _hoveredTarget = null);
     widget.onLayoutChanged(_computeNewLayout(id, target));
   }
 
@@ -75,22 +90,42 @@ class _DraggableGridState extends State<DraggableGrid> {
 
   Widget _inRowZone(int rowIndex, int position) {
     return DragTarget<String>(
-      onWillAcceptWithDetails: (_) => true,
+      onWillAcceptWithDetails: (_) {
+        if (!_isHoveredInRow(rowIndex, position)) {
+          setState(() => _hoveredTarget =
+              _InRowTarget(rowIndex: rowIndex, position: position));
+        }
+        return true;
+      },
+      onMove: (_) {
+        if (!_isHoveredInRow(rowIndex, position)) {
+          setState(() => _hoveredTarget =
+              _InRowTarget(rowIndex: rowIndex, position: position));
+        }
+      },
+      onLeave: (_) {
+        if (_isHoveredInRow(rowIndex, position)) {
+          setState(() => _hoveredTarget = null);
+        }
+      },
       onAcceptWithDetails: (d) {
         _drop(d.data, _InRowTarget(rowIndex: rowIndex, position: position));
       },
-      builder: (context, candidates, _) {
-        final active = candidates.isNotEmpty;
+      builder: (context, _, __) {
+        if (_isHoveredInRow(rowIndex, position)) {
+          return Padding(
+            padding: const EdgeInsets.all(4),
+            child: CustomPaint(
+              painter: _DashedBorderPainter(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          );
+        }
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: active ? 28 : 20,
-          alignment: Alignment.center,
-          child: active
-              ? Container(
-                  width: 2,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              : null,
+          curve: Curves.easeOut,
+          width: _isDragging ? 12 : 0,
         );
       },
     );
@@ -98,22 +133,43 @@ class _DraggableGridState extends State<DraggableGrid> {
 
   Widget _betweenRowsZone(int position) {
     return DragTarget<String>(
-      onWillAcceptWithDetails: (_) => true,
+      onWillAcceptWithDetails: (_) {
+        if (!_isHoveredBetweenRows(position)) {
+          setState(() => _hoveredTarget = _NewRowTarget(position: position));
+        }
+        return true;
+      },
+      onMove: (_) {
+        if (!_isHoveredBetweenRows(position)) {
+          setState(() => _hoveredTarget = _NewRowTarget(position: position));
+        }
+      },
+      onLeave: (_) {
+        if (_isHoveredBetweenRows(position)) {
+          setState(() => _hoveredTarget = null);
+        }
+      },
       onAcceptWithDetails: (d) {
         _drop(d.data, _NewRowTarget(position: position));
       },
-      builder: (context, candidates, _) {
-        final active = candidates.isNotEmpty;
+      builder: (context, _, __) {
+        if (_isHoveredBetweenRows(position)) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: SizedBox(
+              height: 72,
+              child: CustomPaint(
+                painter: _DashedBorderPainter(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          );
+        }
         return AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          height: active ? 28 : 12,
-          alignment: Alignment.center,
-          child: active
-              ? Container(
-                  height: 2,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              : null,
+          curve: Curves.easeOut,
+          height: _isDragging ? 12 : 0,
         );
       },
     );
@@ -122,22 +178,29 @@ class _DraggableGridState extends State<DraggableGrid> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _betweenRowsZone(0),
         for (int r = 0; r < widget.layout.length; r++) ...[
           IntrinsicHeight(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _inRowZone(r, 0),
-                for (int c = 0; c < widget.layout[r].length; c++) ...[
-                  Expanded(
-                    child: _DraggableItem(
-                      id: widget.layout[r][c],
-                      itemBuilder: widget.itemBuilder,
-                      onTap: widget.onItemTap,
+                for (int c = 0; c <= widget.layout[r].length; c++) ...[
+                  if (_isHoveredInRow(r, c))
+                    Expanded(child: _inRowZone(r, c))
+                  else
+                    _inRowZone(r, c),
+                  if (c < widget.layout[r].length)
+                    Expanded(
+                      child: _DraggableItem(
+                        id: widget.layout[r][c],
+                        itemBuilder: widget.itemBuilder,
+                        onTap: widget.onItemTap,
+                        onDragStarted: () => setState(() => _draggingCount++),
+                        onDragEnded: () => setState(() => _draggingCount--),
+                      ),
                     ),
-                  ),
-                  _inRowZone(r, c + 1),
                 ],
               ],
             ),
@@ -156,11 +219,15 @@ class _DraggableItem extends StatefulWidget {
     required this.id,
     required this.itemBuilder,
     this.onTap,
+    this.onDragStarted,
+    this.onDragEnded,
   });
 
   final String id;
   final Widget Function(String) itemBuilder;
   final void Function(String)? onTap;
+  final VoidCallback? onDragStarted;
+  final VoidCallback? onDragEnded;
 
   @override
   State<_DraggableItem> createState() => _DraggableItemState();
@@ -168,7 +235,7 @@ class _DraggableItem extends StatefulWidget {
 
 class _DraggableItemState extends State<_DraggableItem> {
   final _childKey = GlobalKey();
-  Size _size = const Size(100, 60);
+  Size _size = const Size(200, 88);
 
   @override
   void initState() {
@@ -205,18 +272,32 @@ class _DraggableItemState extends State<_DraggableItem> {
     return LongPressDraggable<String>(
       data: widget.id,
       dragAnchorStrategy: _dragAnchor,
-      feedback: Material(
-        elevation: 6,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: _size.width,
-          height: _size.height,
-          child: widget.itemBuilder(widget.id),
+      onDragStarted: widget.onDragStarted,
+      onDragEnd: (_) => widget.onDragEnded?.call(),
+      feedback: Transform.scale(
+        scale: 1.05,
+        child: Material(
+          color: Colors.transparent,
+          elevation: 8,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: _size.width,
+            height: _size.height,
+            child: widget.itemBuilder(widget.id),
+          ),
         ),
       ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: widget.itemBuilder(widget.id),
+      childWhenDragging: Padding(
+        padding: const EdgeInsets.all(4),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: _size.height - 8),
+          child: CustomPaint(
+            painter: _DashedBorderPainter(
+                color: Theme.of(context).colorScheme.outline),
+            child: const SizedBox.expand(),
+          ),
+        ),
       ),
       child: widget.onTap != null
           ? GestureDetector(
@@ -241,4 +322,42 @@ final class _InRowTarget extends _DropTarget {
 final class _NewRowTarget extends _DropTarget {
   _NewRowTarget({required this.position});
   final int position;
+}
+
+// ── dashed placeholder painter ─────────────────────────────────────────────
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({required this.color});
+  final Color color;
+
+  static const _dashWidth = 6.0;
+  static const _dashGap = 4.0;
+  static const _radius = 12.0;
+  static const _strokeWidth = 1.5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = _strokeWidth
+      ..style = PaintingStyle.stroke;
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        const Radius.circular(_radius),
+      ));
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        canvas.drawPath(
+          metric.extractPath(distance, distance + _dashWidth),
+          paint,
+        );
+        distance += _dashWidth + _dashGap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
 }
