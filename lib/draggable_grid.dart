@@ -20,23 +20,34 @@ class DraggableGrid extends StatefulWidget {
 }
 
 class _DraggableGridState extends State<DraggableGrid> {
-  int _draggingCount = 0;
-  bool get _isDragging => _draggingCount > 0;
-  _DropTarget? _hoveredTarget;
+  _DropTarget? _lastTarget;
+  bool _seenInRowSinceLastBetweenRows = true;
+  bool _isDragging = false;
+  Offset? _dragTouchOffset;
+  Size? _dragSize;
+  final _cardKeys = <String, GlobalKey>{};
 
-  bool _isHoveredInRow(int r, int c) {
-    final t = _hoveredTarget;
-    return t is _InRowTarget && t.rowIndex == r && t.position == c;
-  }
+  GlobalKey _cardKey(String id) => _cardKeys.putIfAbsent(id, () => GlobalKey());
 
-  bool _isHoveredBetweenRows(int p) {
-    final t = _hoveredTarget;
-    return t is _NewRowTarget && t.position == p;
-  }
-
-  void _drop(String id, _DropTarget target) {
-    setState(() => _hoveredTarget = null);
-    widget.onLayoutChanged(_computeNewLayout(id, target));
+  bool _isNoOp(String id, _DropTarget target) {
+    int srcRow = -1, srcCol = -1;
+    outer:
+    for (int r = 0; r < widget.layout.length; r++) {
+      for (int c = 0; c < widget.layout[r].length; c++) {
+        if (widget.layout[r][c] == id) {
+          srcRow = r;
+          srcCol = c;
+          break outer;
+        }
+      }
+    }
+    if (srcRow < 0) return false;
+    return switch (target) {
+      _InRowTarget(:final rowIndex, :final position) =>
+        srcRow == rowIndex && (position == srcCol || position == srcCol + 1),
+      _NewRowTarget(:final position) => widget.layout[srcRow].length == 1 &&
+          (position == srcRow || position == srcRow + 1),
+    };
   }
 
   List<List<String>> _computeNewLayout(String id, _DropTarget target) {
@@ -88,90 +99,93 @@ class _DraggableGridState extends State<DraggableGrid> {
     return rows;
   }
 
-  Widget _inRowZone(int rowIndex, int position) {
-    return DragTarget<String>(
-      onWillAcceptWithDetails: (_) {
-        if (!_isHoveredInRow(rowIndex, position)) {
-          setState(() => _hoveredTarget =
-              _InRowTarget(rowIndex: rowIndex, position: position));
-        }
-        return true;
-      },
-      onMove: (_) {
-        if (!_isHoveredInRow(rowIndex, position)) {
-          setState(() => _hoveredTarget =
-              _InRowTarget(rowIndex: rowIndex, position: position));
-        }
-      },
-      onLeave: (_) {
-        if (_isHoveredInRow(rowIndex, position)) {
-          setState(() => _hoveredTarget = null);
-        }
-      },
-      onAcceptWithDetails: (d) {
-        _drop(d.data, _InRowTarget(rowIndex: rowIndex, position: position));
-      },
-      builder: (context, _, __) {
-        if (_isHoveredInRow(rowIndex, position)) {
-          return Padding(
-            padding: const EdgeInsets.all(4),
-            child: CustomPaint(
-              painter: _DashedBorderPainter(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          );
-        }
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          width: _isDragging ? 12 : 0,
-        );
-      },
-    );
+  void _onBottomHover(DragTargetDetails<String> details) {
+    final target = _NewRowTarget(position: widget.layout.length);
+    if (target == _lastTarget) return;
+    _lastTarget = target;
+    _seenInRowSinceLastBetweenRows = false;
+    if (_isNoOp(details.data, target)) return;
+    widget.onLayoutChanged(_computeNewLayout(details.data, target));
   }
 
-  Widget _betweenRowsZone(int position) {
-    return DragTarget<String>(
-      onWillAcceptWithDetails: (_) {
-        if (!_isHoveredBetweenRows(position)) {
-          setState(() => _hoveredTarget = _NewRowTarget(position: position));
-        }
-        return true;
-      },
-      onMove: (_) {
-        if (!_isHoveredBetweenRows(position)) {
-          setState(() => _hoveredTarget = _NewRowTarget(position: position));
-        }
-      },
-      onLeave: (_) {
-        if (_isHoveredBetweenRows(position)) {
-          setState(() => _hoveredTarget = null);
-        }
-      },
-      onAcceptWithDetails: (d) {
-        _drop(d.data, _NewRowTarget(position: position));
-      },
-      builder: (context, _, __) {
-        if (_isHoveredBetweenRows(position)) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: SizedBox(
-              height: 72,
-              child: CustomPaint(
-                painter: _DashedBorderPainter(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          );
-        }
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOut,
-          height: _isDragging ? 12 : 0,
-        );
-      },
+  void _onCardHover(
+      DragTargetDetails<String> details, int r, int c, String hoveredId) {
+    final rb =
+        _cardKey(hoveredId).currentContext?.findRenderObject() as RenderBox?;
+    if (rb == null) return;
+
+    final cardTopLeft = rb.localToGlobal(Offset.zero);
+    final touchOffset =
+        _dragTouchOffset ?? Offset(rb.size.width / 2, rb.size.height / 2);
+    final dragSize = _dragSize ?? rb.size;
+
+    final feedbackCenterY =
+        details.offset.dy - touchOffset.dy + dragSize.height / 2;
+
+    const betweenRowsBuffer = 28.0;
+    final _DropTarget target;
+    if (feedbackCenterY < cardTopLeft.dy - betweenRowsBuffer) {
+      target = _NewRowTarget(position: r);
+    } else if (feedbackCenterY > cardTopLeft.dy + rb.size.height + betweenRowsBuffer) {
+      target = _NewRowTarget(position: r + 1);
+    } else {
+      final pointerX = details.offset.dx + touchOffset.dx;
+      final rowLen = widget.layout[r].length;
+      final rowLeft = cardTopLeft.dx - c * rb.size.width;
+      final rowWidth = rb.size.width * rowLen;
+      final position =
+          ((pointerX - rowLeft) * (rowLen + 1) / rowWidth)
+              .floor()
+              .clamp(0, rowLen);
+      target = _InRowTarget(rowIndex: r, position: position);
+    }
+
+    if (target == _lastTarget) return;
+    _lastTarget = target;
+
+    if (target is _NewRowTarget && !_seenInRowSinceLastBetweenRows) return;
+    if (_isNoOp(details.data, target)) return;
+
+    if (target is _NewRowTarget) {
+      _seenInRowSinceLastBetweenRows = false;
+    } else {
+      _seenInRowSinceLastBetweenRows = true;
+    }
+
+    widget.onLayoutChanged(_computeNewLayout(details.data, target));
+  }
+
+  Widget _buildCardSlot(int r, int c) {
+    final id = widget.layout[r][c];
+    return Expanded(
+      child: DragTarget<String>(
+        key: _cardKey(id),
+        onWillAcceptWithDetails: (details) {
+          _onCardHover(details, r, c, id);
+          return true;
+        },
+        onMove: (details) => _onCardHover(details, r, c, id),
+        builder: (_, __, ___) => _DraggableItem(
+          key: ValueKey(id),
+          id: id,
+          itemBuilder: widget.itemBuilder,
+          onTap: widget.onItemTap,
+          onDragStarted: (touchOffset, size) {
+            setState(() {
+              _isDragging = true;
+              _dragTouchOffset = touchOffset;
+              _dragSize = size;
+            });
+          },
+          onDragEnded: () {
+            _seenInRowSinceLastBetweenRows = true;
+            setState(() {
+              _isDragging = false;
+              _lastTarget = null;
+            });
+          },
+        ),
+      ),
     );
   }
 
@@ -180,33 +194,24 @@ class _DraggableGridState extends State<DraggableGrid> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _betweenRowsZone(0),
-        for (int r = 0; r < widget.layout.length; r++) ...[
+        for (int r = 0; r < widget.layout.length; r++)
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (int c = 0; c <= widget.layout[r].length; c++) ...[
-                  if (_isHoveredInRow(r, c))
-                    Expanded(child: _inRowZone(r, c))
-                  else
-                    _inRowZone(r, c),
-                  if (c < widget.layout[r].length)
-                    Expanded(
-                      child: _DraggableItem(
-                        id: widget.layout[r][c],
-                        itemBuilder: widget.itemBuilder,
-                        onTap: widget.onItemTap,
-                        onDragStarted: () => setState(() => _draggingCount++),
-                        onDragEnded: () => setState(() => _draggingCount--),
-                      ),
-                    ),
-                ],
+                for (int c = 0; c < widget.layout[r].length; c++)
+                  _buildCardSlot(r, c),
               ],
             ),
           ),
-          _betweenRowsZone(r + 1),
-        ],
+        DragTarget<String>(
+          onWillAcceptWithDetails: (details) {
+            _onBottomHover(details);
+            return true;
+          },
+          onMove: _onBottomHover,
+          builder: (_, __, ___) => SizedBox(height: _isDragging ? 64 : 0),
+        ),
       ],
     );
   }
@@ -216,6 +221,7 @@ class _DraggableGridState extends State<DraggableGrid> {
 
 class _DraggableItem extends StatefulWidget {
   const _DraggableItem({
+    super.key,
     required this.id,
     required this.itemBuilder,
     this.onTap,
@@ -226,7 +232,7 @@ class _DraggableItem extends StatefulWidget {
   final String id;
   final Widget Function(String) itemBuilder;
   final void Function(String)? onTap;
-  final VoidCallback? onDragStarted;
+  final void Function(Offset touchOffset, Size size)? onDragStarted;
   final VoidCallback? onDragEnded;
 
   @override
@@ -260,7 +266,9 @@ class _DraggableItemState extends State<_DraggableItem> {
   Offset _dragAnchor(Draggable<Object?> _, BuildContext __, Offset position) {
     final rb = _childKey.currentContext?.findRenderObject() as RenderBox?;
     if (rb == null) return Offset.zero;
-    return rb.globalToLocal(position);
+    final anchor = rb.globalToLocal(position);
+    widget.onDragStarted?.call(anchor, rb.size);
+    return anchor;
   }
 
   @override
@@ -272,7 +280,6 @@ class _DraggableItemState extends State<_DraggableItem> {
     return LongPressDraggable<String>(
       data: widget.id,
       dragAnchorStrategy: _dragAnchor,
-      onDragStarted: widget.onDragStarted,
       onDragEnd: (_) => widget.onDragEnded?.call(),
       feedback: Transform.scale(
         scale: 1.05,
@@ -317,11 +324,27 @@ final class _InRowTarget extends _DropTarget {
   _InRowTarget({required this.rowIndex, required this.position});
   final int rowIndex;
   final int position;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _InRowTarget &&
+      other.rowIndex == rowIndex &&
+      other.position == position;
+
+  @override
+  int get hashCode => Object.hash(rowIndex, position);
 }
 
 final class _NewRowTarget extends _DropTarget {
   _NewRowTarget({required this.position});
   final int position;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _NewRowTarget && other.position == position;
+
+  @override
+  int get hashCode => position.hashCode;
 }
 
 // ── dashed placeholder painter ─────────────────────────────────────────────
