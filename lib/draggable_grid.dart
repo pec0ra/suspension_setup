@@ -31,6 +31,10 @@ class _DraggableGridState extends State<DraggableGrid> {
   final _cardCols = <String, int>{};
   final _cardSlideOffsets = <String, Offset>{};
   double _rowWidth = 0;
+  // True for exactly one frame after _rowWidth changes; suppresses the
+  // AnimatedContainer width animation so cards snap to the new size and
+  // never exceed the row's immediately-updated width (which would overflow).
+  bool _rowWidthSnapping = false;
   GlobalKey _cardKey(String id) => _cardKeys.putIfAbsent(id, () => GlobalKey());
 
   @override
@@ -297,7 +301,14 @@ class _DraggableGridState extends State<DraggableGrid> {
         for (int r = 0; r < widget.layout.length; r++)
           LayoutBuilder(
             builder: (context, constraints) {
-              _rowWidth = constraints.maxWidth;
+              final newRowWidth = constraints.maxWidth;
+              if (newRowWidth != _rowWidth && !_rowWidthSnapping) {
+                _rowWidthSnapping = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _rowWidthSnapping = false);
+                });
+              }
+              _rowWidth = newRowWidth;
               final rowLen = widget.layout[r].length;
               final cardWidth = _rowWidth / rowLen;
               // ClipRect clips the visual overflow from AnimatedSlide during
@@ -313,7 +324,9 @@ class _DraggableGridState extends State<DraggableGrid> {
                           width: _enteringCards.contains(widget.layout[r][c])
                               ? 0.0
                               : cardWidth,
-                          duration: const Duration(milliseconds: 200),
+                          duration: _rowWidthSnapping
+                              ? Duration.zero
+                              : const Duration(milliseconds: 200),
                           curve: Curves.easeInOut,
                           child: _buildCardContent(r, c),
                         ),
