@@ -210,7 +210,8 @@ class _DraggableGridState extends State<DraggableGrid> {
     final _DropTarget target;
     if (feedbackCenterY < cardTopLeft.dy - betweenRowsBuffer) {
       target = _NewRowTarget(position: r);
-    } else if (feedbackCenterY > cardTopLeft.dy + rb.size.height + betweenRowsBuffer) {
+    } else if (feedbackCenterY >
+        cardTopLeft.dy + rb.size.height + betweenRowsBuffer) {
       target = _NewRowTarget(position: r + 1);
     } else {
       final pointerX = details.offset.dx + touchOffset.dx;
@@ -221,16 +222,14 @@ class _DraggableGridState extends State<DraggableGrid> {
       // Using it gives a stable rowLeft even while entering cards animate.
       final firstRb = c == 0
           ? rb
-          : (_cardKey(widget.layout[r][0])
-                  .currentContext
-                  ?.findRenderObject() as RenderBox?) ??
+          : (_cardKey(widget.layout[r][0]).currentContext?.findRenderObject()
+                  as RenderBox?) ??
               rb;
       final rowLeft = firstRb.localToGlobal(Offset.zero).dx;
       final rowWidth = nominalCardWidth * rowLen;
-      final position =
-          ((pointerX - rowLeft) * (rowLen + 1) / rowWidth)
-              .floor()
-              .clamp(0, rowLen);
+      final position = ((pointerX - rowLeft) * (rowLen + 1) / rowWidth)
+          .floor()
+          .clamp(0, rowLen);
       target = _InRowTarget(rowIndex: r, position: position);
     }
 
@@ -311,8 +310,7 @@ class _DraggableGridState extends State<DraggableGrid> {
                       for (int c = 0; c < rowLen; c++)
                         AnimatedContainer(
                           key: ValueKey(widget.layout[r][c]),
-                          width: _enteringCards
-                                  .contains(widget.layout[r][c])
+                          width: _enteringCards.contains(widget.layout[r][c])
                               ? 0.0
                               : cardWidth,
                           duration: const Duration(milliseconds: 200),

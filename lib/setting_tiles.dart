@@ -124,8 +124,8 @@ class FieldConfigTile extends StatelessWidget {
               child: Icon(
                 Icons.drag_indicator,
                 size: 14,
-                color: theme.colorScheme.onPrimaryContainer
-                    .withValues(alpha: 0.4),
+                color:
+                    theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.4),
               ),
             ),
           ],

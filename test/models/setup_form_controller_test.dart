@@ -55,6 +55,20 @@ void main() {
     });
   });
 
+  group('SectionFormController.addFields', () {
+    test('copies fields as new and preserves layout grouping', () {
+      final ctrl = SectionFormController(null);
+      final section = SectionSettings.getDefaultForSuspension();
+      ctrl.addFields(section);
+
+      expect(ctrl.fields.length, section.activeFields.length);
+      expect(ctrl.fields.every((f) => f.isNew), isTrue);
+      expect(ctrl.layout, section.layout);
+      // Layout uses multi-field rows, not one row per field.
+      expect(ctrl.layout.length, lessThan(ctrl.fields.length));
+    });
+  });
+
   group('SectionFormController.addField / removeField', () {
     test('addField adds to fields list and layout', () {
       final ctrl = SectionFormController(null);

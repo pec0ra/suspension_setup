@@ -232,6 +232,30 @@ void main() {
   });
 
   group('Setup', () {
+    test('fromJson with null tyres falls back to empty section', () {
+      final json = {
+        'id': 'test-id',
+        'name': 'Trail Setup',
+        'fork': {
+          'fields': [],
+          'layout': [],
+          'serialNumber': null,
+          'infoUrl': null
+        },
+        'shock': {
+          'fields': [],
+          'layout': [],
+          'serialNumber': null,
+          'infoUrl': null
+        },
+        'tyres': null,
+        'history': [],
+      };
+      final setup = Setup.fromJson(json);
+      expect(setup.tyres.fields, isEmpty);
+      expect(setup.tyres.layout, isEmpty);
+    });
+
     test('roundtrips through JSON preserving all fields', () {
       final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 110);
       final sagField = Field(name: 'Sag', unit: '%', value: 25);
@@ -593,6 +617,19 @@ void main() {
       expect(makeSetup.fork.activeFields.toList(), isEmpty);
     });
 
+    test('removes deleted field from layout', () {
+      makeSetup.applyChanges([
+        SettingChange(
+            suspensionType: SuspensionType.fork,
+            fieldId: airId,
+            oldValue: 100,
+            newValue: null,
+            oldEnabled: true,
+            newEnabled: false),
+      ]);
+      expect(makeSetup.fork.layout, isEmpty);
+    });
+
     test('undeletes field when newEnabled is true', () {
       final deletedField =
           Field(id: airId, name: 'Air Pressure', unit: 'PSI', deleted: true);
@@ -615,6 +652,31 @@ void main() {
       ]);
       expect(setup.fork.fieldById(airId)?.deleted, isFalse);
       expect(setup.fork.fieldById(airId)?.value, 100);
+    });
+
+    test('adds re-enabled field back to layout', () {
+      final deletedField =
+          Field(id: airId, name: 'Air Pressure', unit: 'PSI', deleted: true);
+      final setup = Setup(
+        id: 'test',
+        name: 'Test',
+        fork: SectionSettings(fields: [deletedField], layout: []),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
+        history: [],
+      );
+      setup.applyChanges([
+        SettingChange(
+            suspensionType: SuspensionType.fork,
+            fieldId: airId,
+            oldValue: null,
+            newValue: 100,
+            oldEnabled: false,
+            newEnabled: true),
+      ]);
+      expect(setup.fork.layout, [
+        [airId]
+      ]);
     });
   });
 

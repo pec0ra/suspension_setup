@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:suspension_setup/models/field.dart';
+import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
 import 'package:suspension_setup/setup_detail.dart';
@@ -45,6 +46,73 @@ Setup _makeSetup({String? serialNumber, String? infoUrl}) {
 }
 
 void main() {
+  group('History', () {
+    testWidgets('shows value change with field name and unit', (tester) async {
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 110);
+      final setup = Setup(
+        id: 'test-id',
+        name: 'Trail Setup',
+        fork: SectionSettings(fields: [
+          airField
+        ], layout: [
+          [airField.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
+        history: [
+          SettingChanges(
+            changes: [
+              SettingChange(
+                suspensionType: SuspensionType.fork,
+                fieldId: airField.id,
+                oldValue: 100,
+                newValue: 110,
+              ),
+            ],
+            date: DateTime.now(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_harness(setup));
+      await tester.pump();
+
+      expect(find.text('Air Pressure: 100 → 110 PSI'), findsOneWidget);
+    });
+
+    testWidgets('shows correct name and unit for deleted field in history',
+        (tester) async {
+      final sagField = Field(name: 'Sag', unit: '%', deleted: true);
+      final setup = Setup(
+        id: 'test-id',
+        name: 'Trail Setup',
+        fork: SectionSettings(fields: [sagField], layout: []),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
+        history: [
+          SettingChanges(
+            changes: [
+              SettingChange(
+                suspensionType: SuspensionType.fork,
+                fieldId: sagField.id,
+                oldValue: 25,
+                newValue: null,
+                oldEnabled: true,
+                newEnabled: false,
+              ),
+            ],
+            date: DateTime.now(),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_harness(setup));
+      await tester.pump();
+
+      expect(find.text('Sag: disabled (was 25 %)'), findsOneWidget);
+    });
+  });
+
   group('_ComponentInfo', () {
     testWidgets('renders nothing when serialNumber and infoUrl are both null',
         (tester) async {

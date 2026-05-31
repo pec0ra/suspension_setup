@@ -265,29 +265,26 @@ void main() {
 
       // Extract the ids assigned to the fields during migration.
       final forkFields = result['setups']['id-1']['fork']['fields'] as List;
-      final airPressureId = (forkFields.firstWhere(
-              (f) => (f as Map)['name'] == 'Air Pressure') as Map)['id']
-          as String;
+      final airPressureId =
+          (forkFields.firstWhere((f) => (f as Map)['name'] == 'Air Pressure')
+              as Map)['id'] as String;
 
       final tyreFields = result['setups']['id-1']['tyres']['fields'] as List;
-      final frontTyreId = (tyreFields.firstWhere(
-              (f) => (f as Map)['name'] == 'Front Tyre Pressure') as Map)['id']
-          as String;
+      final frontTyreId = (tyreFields
+              .firstWhere((f) => (f as Map)['name'] == 'Front Tyre Pressure')
+          as Map)['id'] as String;
 
-      final changes =
-          result['setups']['id-1']['history'][0]['changes'] as List;
+      final changes = result['setups']['id-1']['history'][0]['changes'] as List;
 
-      final forkChange =
-          changes.firstWhere((c) => (c as Map)['suspensionType'] == 'fork')
-              as Map;
+      final forkChange = changes
+          .firstWhere((c) => (c as Map)['suspensionType'] == 'fork') as Map;
       expect(forkChange.containsKey('settingType'), isFalse);
       expect(forkChange['fieldId'], airPressureId);
       expect(forkChange['oldValue'], 90);
       expect(forkChange['newValue'], 100);
 
-      final tyreChange =
-          changes.firstWhere((c) => (c as Map)['suspensionType'] == 'tyre')
-              as Map;
+      final tyreChange = changes
+          .firstWhere((c) => (c as Map)['suspensionType'] == 'tyre') as Map;
       expect(tyreChange.containsKey('settingType'), isFalse);
       expect(tyreChange['fieldId'], frontTyreId);
       expect(tyreChange['oldValue'], 25);
