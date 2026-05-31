@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:suspension_setup/migrations/v1_to_v2.dart';
-import 'package:suspension_setup/models/setting_change.dart';
-import 'package:suspension_setup/models/settings.dart';
 
 Map<String, dynamic> _v1Settings({
   int? airPressure = 100,
@@ -176,33 +174,31 @@ void main() {
     });
 
     test('airPressure unit is PSI', () {
-      expect(fork['airPressure']['unit'],
-          Settings.defaultUnits[SettingType.airPressure]);
+      expect(fork['airPressure']['unit'], 'PSI');
     });
 
     test('sag unit is %', () {
-      expect(fork['sag']['unit'], Settings.defaultUnits[SettingType.sag]);
+      expect(fork['sag']['unit'], '%');
     });
 
     test('volumeSpacer unit is Spacers', () {
-      expect(fork['volumeSpacer']['unit'],
-          Settings.defaultUnits[SettingType.volumeSpacer]);
+      expect(fork['volumeSpacer']['unit'], 'Spacers');
     });
 
     test('lsc unit is Clicks', () {
-      expect(fork['lsc']['unit'], Settings.defaultUnits[SettingType.lsc]);
+      expect(fork['lsc']['unit'], 'Clicks');
     });
 
     test('hsc unit is Clicks', () {
-      expect(fork['hsc']['unit'], Settings.defaultUnits[SettingType.hsc]);
+      expect(fork['hsc']['unit'], 'Clicks');
     });
 
     test('lsr unit is Clicks', () {
-      expect(fork['lsr']['unit'], Settings.defaultUnits[SettingType.lsr]);
+      expect(fork['lsr']['unit'], 'Clicks');
     });
 
     test('hsr unit is Clicks', () {
-      expect(fork['hsr']['unit'], Settings.defaultUnits[SettingType.hsr]);
+      expect(fork['hsr']['unit'], 'Clicks');
     });
 
     test('null field has no unit', () {

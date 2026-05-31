@@ -65,16 +65,16 @@ class SetupSnapshotPage extends StatelessWidget {
                 ),
               if (snapshot.fork.hasAnyField) ...[
                 const TitleWithIcon(title: 'Fork', icon: SuspensionIcons.fork),
-                SettingTiles(settings: snapshot.fork),
+                SettingTiles(section: snapshot.fork),
               ],
               if (snapshot.shock.hasAnyField) ...[
                 const TitleWithIcon(
                     title: 'Shock', icon: SuspensionIcons.shock),
-                SettingTiles(settings: snapshot.shock),
+                SettingTiles(section: snapshot.shock),
               ],
               if (snapshot.tyres.hasAnyField) ...[
                 const TitleWithIcon(title: 'Tyres', icon: SuspensionIcons.tyre),
-                TyreTiles(tyres: snapshot.tyres),
+                SettingTiles(section: snapshot.tyres),
               ],
             ],
           ),

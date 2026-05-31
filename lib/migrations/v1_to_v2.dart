@@ -1,8 +1,16 @@
-import 'package:suspension_setup/models/setting_change.dart';
-import 'package:suspension_setup/models/settings.dart';
+// v1 structure: { setupId: { id, name, fork: { airPressure: int?, ... }, shock: ..., history } }
+// v2 structure: { schemaVersion: 2, setups: { setupId: { ..., fork: { airPressure: {value, unit}?, ... } } } }
 
-/// v1 structure: { setupId: { id, name, fork: { airPressure: int?, ... }, shock: ..., history } }
-/// v2 structure: { schemaVersion: 2, setups: { setupId: { ..., fork: { airPressure: {value, unit}?, ... } } } }
+const _defaultUnits = {
+  'airPressure': 'PSI',
+  'sag': '%',
+  'volumeSpacer': 'Spacers',
+  'lsc': 'Clicks',
+  'hsc': 'Clicks',
+  'lsr': 'Clicks',
+  'hsr': 'Clicks',
+};
+
 Map<String, dynamic> migrateV1ToV2(Map<String, dynamic> v1Data) {
   final migratedSetups = v1Data.map(
     (id, value) => MapEntry(id, _migrateSetup(value as Map<String, dynamic>)),
@@ -21,7 +29,7 @@ Map<String, dynamic> _migrateSetup(Map<String, dynamic> setup) {
 Map<String, dynamic> _migrateSettings(Map<String, dynamic> settings) {
   return settings.map((key, rawValue) {
     if (rawValue == null) return MapEntry(key, null);
-    final unit = Settings.defaultUnits[SettingType.fromJson(key)];
+    final unit = _defaultUnits[key] ?? '';
     return MapEntry(key, {'value': rawValue, 'unit': unit});
   });
 }

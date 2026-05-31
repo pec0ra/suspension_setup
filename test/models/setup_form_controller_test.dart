@@ -4,15 +4,18 @@ import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
 import 'package:suspension_setup/models/setup_form_controller.dart';
-import 'package:suspension_setup/models/tyres.dart';
 
-Setup _makeSetup({Field? airPressure, Field? sag, Field? frontTyre}) {
+Setup _makeSetup({List<Field> forkFields = const []}) {
+  final ids = forkFields.map((f) => f.id).toList();
   return Setup(
     id: 'test',
     name: 'Test Setup',
-    fork: Settings(airPressure: airPressure, sag: sag),
-    shock: Settings(),
-    tyres: Tyres(front: frontTyre),
+    fork: SectionSettings(
+      fields: List.from(forkFields),
+      layout: ids.isEmpty ? [] : [ids],
+    ),
+    shock: SectionSettings(fields: [], layout: []),
+    tyres: SectionSettings(fields: [], layout: []),
     history: [],
   );
 }
@@ -20,54 +23,95 @@ Setup _makeSetup({Field? airPressure, Field? sag, Field? frontTyre}) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('hasNewlyEnabledFields', () {
-    test('null setup — no fields enabled → false', () {
+  group('hasNewlyAddedFields', () {
+    test('null setup — default fields pre-populated as new → true', () {
       final ctrl = SetupFormController(null);
       addTearDown(ctrl.dispose);
-      expect(ctrl.hasNewlyEnabledFields(null), isFalse);
+      expect(ctrl.hasNewlyAddedFields(), isTrue);
     });
 
-    test('null setup — one field enabled → true', () {
+    test('null setup — default fields present in fork, shock, tyres', () {
       final ctrl = SetupFormController(null);
       addTearDown(ctrl.dispose);
-      ctrl.fork.airPressure.enabled.value = true;
-      expect(ctrl.hasNewlyEnabledFields(null), isTrue);
+      expect(ctrl.fork.fields, isNotEmpty);
+      expect(ctrl.shock.fields, isNotEmpty);
+      expect(ctrl.tyres.fields, isNotEmpty);
+      expect(ctrl.fork.fields.every((f) => f.isNew), isTrue);
     });
 
-    test('existing setup — enabled fields unchanged → false', () {
-      final setup =
-          _makeSetup(airPressure: const Field(value: 73, unit: 'PSI'));
-      final ctrl = SetupFormController(setup);
+    test('existing setup — no new fields → false', () {
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final ctrl = SetupFormController(_makeSetup(forkFields: [f]));
       addTearDown(ctrl.dispose);
-      expect(ctrl.hasNewlyEnabledFields(setup), isFalse);
+      expect(ctrl.hasNewlyAddedFields(), isFalse);
     });
 
-    test('existing setup — field newly enabled → true', () {
-      final setup =
-          _makeSetup(airPressure: const Field(value: 73, unit: 'PSI'));
-      final ctrl = SetupFormController(setup);
+    test('existing setup — field added → true', () {
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final ctrl = SetupFormController(_makeSetup(forkFields: [f]));
       addTearDown(ctrl.dispose);
-      ctrl.fork.sag.enabled.value = true;
-      expect(ctrl.hasNewlyEnabledFields(setup), isTrue);
+      ctrl.fork.addField('Sag', '%');
+      expect(ctrl.hasNewlyAddedFields(), isTrue);
+    });
+  });
+
+  group('SectionFormController.addFields', () {
+    test('copies fields as new and preserves layout grouping', () {
+      final ctrl = SectionFormController(null);
+      final section = SectionSettings.getDefaultForSuspension();
+      ctrl.addFields(section);
+
+      expect(ctrl.fields.length, section.activeFields.length);
+      expect(ctrl.fields.every((f) => f.isNew), isTrue);
+      expect(ctrl.layout, section.layout);
+      // Layout uses multi-field rows, not one row per field.
+      expect(ctrl.layout.length, lessThan(ctrl.fields.length));
+    });
+  });
+
+  group('SectionFormController.addField / removeField', () {
+    test('addField adds to fields list and layout', () {
+      final ctrl = SectionFormController(null);
+      ctrl.addField('Sag', '%');
+      expect(ctrl.fields, hasLength(1));
+      expect(ctrl.fields.first.name.text, 'Sag');
+      expect(ctrl.fields.first.unit.text, '%');
+      expect(ctrl.fields.first.isNew, isTrue);
+      expect(ctrl.layout, hasLength(1));
+      expect(ctrl.layout.first, contains(ctrl.fields.first.id));
     });
 
-    test('existing setup — field disabled (not newly enabled) → false', () {
-      final setup = _makeSetup(
-        airPressure: const Field(value: 73, unit: 'PSI'),
-        sag: const Field(value: 30, unit: '%'),
-      );
-      final ctrl = SetupFormController(setup);
-      addTearDown(ctrl.dispose);
-      ctrl.fork.sag.enabled.value = false;
-      expect(ctrl.hasNewlyEnabledFields(setup), isFalse);
+    test('removeField removes from fields list and layout', () {
+      final f1 = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final f2 = Field(name: 'Sag', unit: '%', value: 25);
+      final section = SectionSettings(fields: [
+        f1,
+        f2
+      ], layout: [
+        [f1.id, f2.id]
+      ]);
+      final ctrl = SectionFormController(section);
+      ctrl.removeField(f1.id);
+      expect(ctrl.fields, hasLength(1));
+      expect(ctrl.fields.first.id, f2.id);
+      expect(ctrl.layout.expand((r) => r).toList(), isNot(contains(f1.id)));
     });
 
-    test('existing setup — tyre field newly enabled → true', () {
-      final setup = _makeSetup();
-      final ctrl = SetupFormController(setup);
-      addTearDown(ctrl.dispose);
-      ctrl.tyres.front.enabled.value = true;
-      expect(ctrl.hasNewlyEnabledFields(setup), isTrue);
+    test('layoutControllers returns field controllers in layout order', () {
+      final f1 = Field(name: 'Air', unit: 'PSI', value: 73);
+      final f2 = Field(name: 'Sag', unit: '%', value: 25);
+      final section = SectionSettings(fields: [
+        f1,
+        f2
+      ], layout: [
+        [f1.id],
+        [f2.id]
+      ]);
+      final ctrl = SectionFormController(section);
+      final rows = ctrl.layoutControllers;
+      expect(rows, hasLength(2));
+      expect(rows[0].first.id, f1.id);
+      expect(rows[1].first.id, f2.id);
     });
   });
 
@@ -76,21 +120,20 @@ void main() {
       final ctrl = SetupFormController(null);
       addTearDown(ctrl.dispose);
       ctrl.name.text = 'My Setup';
-      ctrl.fork.airPressure.enabled.value = true;
-      ctrl.fork.airPressure.value.text = '73';
-      ctrl.fork.airPressure.unit.text = 'PSI';
+      ctrl.fork.addField('Air Pressure', 'PSI');
+      ctrl.fork.fields.first.value.text = '73';
 
       final (setup, changes) = ctrl.buildResult(null);
 
       expect(setup.name, 'My Setup');
-      expect(setup.fork.airPressure?.value, 73);
-      expect(setup.fork.airPressure?.unit, 'PSI');
+      expect(setup.fork.activeFields.first.value, 73);
+      expect(setup.fork.activeFields.first.unit, 'PSI');
       expect(changes.changes, isEmpty);
     });
 
     test('existing setup: unchanged fields produce no changes', () {
-      final setup =
-          _makeSetup(airPressure: const Field(value: 73, unit: 'PSI'));
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [f]);
       final ctrl = SetupFormController(setup);
       addTearDown(ctrl.dispose);
 
@@ -100,76 +143,58 @@ void main() {
     });
 
     test('existing setup: value change produces correct SettingChange', () {
-      final setup =
-          _makeSetup(airPressure: const Field(value: 73, unit: 'PSI'));
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [f]);
       final ctrl = SetupFormController(setup);
       addTearDown(ctrl.dispose);
-      ctrl.fork.airPressure.value.text = '80';
+      ctrl.fork.fields.first.value.text = '80';
 
       final (_, changes) = ctrl.buildResult(setup);
 
       expect(changes.changes.length, 1);
       final change = changes.changes.first;
-      expect(change.settingType, SettingType.airPressure);
+      expect(change.fieldId, f.id);
       expect(change.suspensionType, SuspensionType.fork);
       expect(change.oldValue, 73);
       expect(change.newValue, 80);
       expect(change.newEnabled, isNull);
     });
 
-    test('existing setup: newly enabled field sets newEnabled=true', () {
-      final setup =
-          _makeSetup(airPressure: const Field(value: 73, unit: 'PSI'));
+    test('existing setup: newly added field emits enable change', () {
+      final f = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [f]);
       final ctrl = SetupFormController(setup);
       addTearDown(ctrl.dispose);
-      ctrl.fork.sag.enabled.value = true;
-      ctrl.fork.sag.value.text = '30';
+      ctrl.fork.addField('Sag', '%');
+      ctrl.fork.fields.last.value.text = '30';
 
       final (_, changes) = ctrl.buildResult(setup);
 
       expect(changes.changes.length, 1);
       final change = changes.changes.first;
-      expect(change.settingType, SettingType.sag);
       expect(change.newEnabled, isTrue);
       expect(change.oldEnabled, isFalse);
       expect(change.newValue, 30);
       expect(change.oldValue, isNull);
     });
 
-    test('existing setup: disabled field sets newEnabled=false', () {
-      final setup = _makeSetup(
-        airPressure: const Field(value: 73, unit: 'PSI'),
-        sag: const Field(value: 30, unit: '%'),
-      );
+    test('existing setup: removed field emits disable change', () {
+      final f1 = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final f2 = Field(name: 'Sag', unit: '%', value: 25);
+      final setup = _makeSetup(forkFields: [f1, f2]);
       final ctrl = SetupFormController(setup);
       addTearDown(ctrl.dispose);
-      ctrl.fork.sag.enabled.value = false;
+      ctrl.fork.removeField(f2.id);
 
       final (_, changes) = ctrl.buildResult(setup);
 
       expect(changes.changes.length, 1);
       final change = changes.changes.first;
-      expect(change.settingType, SettingType.sag);
+      expect(change.fieldId, f2.id);
       expect(change.newEnabled, isFalse);
       expect(change.oldEnabled, isTrue);
-      expect(change.oldValue, 30);
+      expect(change.oldValue, 25);
       expect(change.newValue, isNull);
-    });
-
-    test('tyre field change is recorded with SuspensionType.tyre', () {
-      final setup = _makeSetup(frontTyre: const Field(value: 28, unit: 'PSI'));
-      final ctrl = SetupFormController(setup);
-      addTearDown(ctrl.dispose);
-      ctrl.tyres.front.value.text = '30';
-
-      final (_, changes) = ctrl.buildResult(setup);
-
-      expect(changes.changes.length, 1);
-      final change = changes.changes.first;
-      expect(change.settingType, SettingType.frontTyrePressure);
-      expect(change.suspensionType, SuspensionType.tyre);
-      expect(change.oldValue, 28);
-      expect(change.newValue, 30);
     });
   });
 }

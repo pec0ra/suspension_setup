@@ -1,64 +1,69 @@
 import 'package:flutter/widgets.dart';
-import 'package:suspension_setup/models/setting_change.dart';
-import 'package:suspension_setup/models/settings.dart';
-import 'package:suspension_setup/models/tyres.dart';
+import 'package:uuid/uuid.dart';
 
 import 'field.dart';
+import 'setting_change.dart';
+import 'settings.dart';
 import 'setup.dart';
 
 class SetupFormController {
   SetupFormController(Setup? setup)
       : name = TextEditingController(text: setup?.name),
-        fork = SettingsFormController(setup?.fork),
-        shock = SettingsFormController(setup?.shock),
-        tyres = TyresFormController(setup?.tyres);
+        fork = SectionFormController(setup?.fork),
+        shock = SectionFormController(setup?.shock),
+        tyres = SectionFormController(setup?.tyres) {
+    if (setup == null) {
+      final defaults = Setup.getDefault();
+      fork.addFields(defaults.fork);
+      shock.addFields(defaults.shock);
+      tyres.addFields(defaults.tyres);
+    }
+  }
 
   final TextEditingController name;
-  final SettingsFormController fork;
-  final SettingsFormController shock;
-  final TyresFormController tyres;
+  final SectionFormController fork;
+  final SectionFormController shock;
+  final SectionFormController tyres;
 
-  bool hasNewlyEnabledFields(Setup? originalSetup) {
-    bool isNew(FieldFormController ctrl, Field? original) =>
-        ctrl.enabled.value && original == null;
-    return isNew(fork.airPressure, originalSetup?.fork.airPressure) ||
-        isNew(fork.sag, originalSetup?.fork.sag) ||
-        isNew(fork.volumeSpacer, originalSetup?.fork.volumeSpacer) ||
-        isNew(fork.lsc, originalSetup?.fork.lsc) ||
-        isNew(fork.hsc, originalSetup?.fork.hsc) ||
-        isNew(fork.lsr, originalSetup?.fork.lsr) ||
-        isNew(fork.hsr, originalSetup?.fork.hsr) ||
-        isNew(shock.airPressure, originalSetup?.shock.airPressure) ||
-        isNew(shock.sag, originalSetup?.shock.sag) ||
-        isNew(shock.volumeSpacer, originalSetup?.shock.volumeSpacer) ||
-        isNew(shock.lsc, originalSetup?.shock.lsc) ||
-        isNew(shock.hsc, originalSetup?.shock.hsc) ||
-        isNew(shock.lsr, originalSetup?.shock.lsr) ||
-        isNew(shock.hsr, originalSetup?.shock.hsr) ||
-        isNew(tyres.front, originalSetup?.tyres.front) ||
-        isNew(tyres.rear, originalSetup?.tyres.rear);
+  /// True if any section has a newly added field (needs value entry).
+  bool hasNewlyAddedFields() {
+    return fork.fields.any((f) => f.isNew) ||
+        shock.fields.any((f) => f.isNew) ||
+        tyres.fields.any((f) => f.isNew);
   }
 
   (Setup, SettingChanges) buildResult(Setup? originalSetup) {
-    final newSetup = originalSetup?.copyMutable() ?? Setup.getDefault();
+    final newSetup = originalSetup?.copyMutable() ??
+        Setup(
+          id: const Uuid().v1(),
+          name: '',
+          fork: SectionSettings(fields: [], layout: []),
+          shock: SectionSettings(fields: [], layout: []),
+          tyres: SectionSettings(fields: [], layout: []),
+          history: [],
+        );
     final changes = SettingChanges(changes: [], date: DateTime.now());
+    final isEditing = originalSetup != null;
 
-    _applySettings(
-        SuspensionType.fork, fork, originalSetup?.fork, changes, newSetup.fork);
-    _applySettings(SuspensionType.shock, shock, originalSetup?.shock, changes,
-        newSetup.shock);
-    _applyTyres(tyres, originalSetup?.tyres, changes, newSetup.tyres);
+    _applySection(SuspensionType.fork, fork, originalSetup?.fork, changes,
+        newSetup.fork, isEditing);
+    _applySection(SuspensionType.shock, shock, originalSetup?.shock, changes,
+        newSetup.shock, isEditing);
+    _applySection(SuspensionType.tyre, tyres, originalSetup?.tyres, changes,
+        newSetup.tyres, isEditing);
 
     String? trimmed(TextEditingController ctrl) {
       final t = ctrl.text.trim();
       return t.isEmpty ? null : t;
     }
 
+    newSetup.name = name.text;
     newSetup.fork.serialNumber = trimmed(fork.serialNumber);
     newSetup.fork.infoUrl = trimmed(fork.infoUrl);
     newSetup.shock.serialNumber = trimmed(shock.serialNumber);
     newSetup.shock.infoUrl = trimmed(shock.infoUrl);
-    newSetup.name = name.text;
+    newSetup.tyres.serialNumber = trimmed(tyres.serialNumber);
+    newSetup.tyres.infoUrl = trimmed(tyres.infoUrl);
 
     return (newSetup, changes);
   }
@@ -71,197 +76,191 @@ class SetupFormController {
   }
 }
 
-void _applyField(
-  SettingType type,
+void _applySection(
   SuspensionType suspensionType,
-  Field? oldField,
-  FieldFormController ctrl,
-  bool isEditing,
+  SectionFormController ctrl,
+  SectionSettings? original,
   SettingChanges changes,
-  void Function(Field?) setter,
+  SectionSettings target,
+  bool isEditing,
 ) {
-  final newField = ctrl.enabled.value
-      ? Field(value: num.parse(ctrl.value.text), unit: ctrl.unit.text)
-      : null;
+  // Apply layout from the form controller.
+  target.layout = ctrl.layout.map((row) => List<String>.from(row)).toList();
 
-  if (isEditing) {
-    final wasEnabled = oldField != null;
-    final isEnabled = ctrl.enabled.value;
-    final enabledChanged = wasEnabled != isEnabled;
-    final valueChanged = oldField?.value != newField?.value;
+  // Apply each active field in the form.
+  for (final fieldCtrl in ctrl.fields) {
+    final origField = original?.fieldById(fieldCtrl.id);
+    final newValue = num.tryParse(fieldCtrl.value.text);
+    final newUnit = fieldCtrl.unit.text;
+    final newName = fieldCtrl.name.text;
 
-    if (enabledChanged || valueChanged) {
-      changes.changes.add(SettingChange(
-        settingType: type,
-        suspensionType: suspensionType,
-        oldValue: oldField?.value,
-        newValue: newField?.value,
-        oldEnabled: enabledChanged ? wasEnabled : null,
-        newEnabled: enabledChanged ? isEnabled : null,
-      ));
+    if (fieldCtrl.isNew) {
+      // Newly created field — add to target registry.
+      final newField = Field(
+        id: fieldCtrl.id,
+        name: newName,
+        unit: newUnit,
+        value: newValue,
+      );
+      final existingIdx = target.fields.indexWhere((f) => f.id == fieldCtrl.id);
+      if (existingIdx >= 0) {
+        target.fields[existingIdx] = newField;
+      } else {
+        target.fields.add(newField);
+      }
+      if (isEditing && newValue != null) {
+        changes.changes.add(SettingChange(
+          suspensionType: suspensionType,
+          fieldId: fieldCtrl.id,
+          oldValue: null,
+          newValue: newValue,
+          oldEnabled: false,
+          newEnabled: true,
+        ));
+      }
+    } else if (origField != null) {
+      // Existing field — update metadata and value.
+      final idx = target.fields.indexWhere((f) => f.id == fieldCtrl.id);
+      if (idx >= 0) {
+        target.fields[idx] = origField.copyWith(
+          name: newName,
+          unit: newUnit,
+          value: newValue,
+          deleted: false,
+        );
+      }
+      if (isEditing && newValue != null && origField.value != newValue) {
+        changes.changes.add(SettingChange(
+          suspensionType: suspensionType,
+          fieldId: fieldCtrl.id,
+          oldValue: origField.value,
+          newValue: newValue,
+        ));
+      }
     }
   }
 
-  setter(newField);
-}
-
-void _applySettings(
-  SuspensionType suspensionType,
-  SettingsFormController controller,
-  Settings? oldSettings,
-  SettingChanges changes,
-  Settings newSettings,
-) {
-  final isEditing = oldSettings != null;
-  _applyField(
-      SettingType.airPressure,
-      suspensionType,
-      oldSettings?.airPressure,
-      controller.airPressure,
-      isEditing,
-      changes,
-      (f) => newSettings.airPressure = f);
-  _applyField(SettingType.sag, suspensionType, oldSettings?.sag, controller.sag,
-      isEditing, changes, (f) => newSettings.sag = f);
-  _applyField(
-      SettingType.volumeSpacer,
-      suspensionType,
-      oldSettings?.volumeSpacer,
-      controller.volumeSpacer,
-      isEditing,
-      changes,
-      (f) => newSettings.volumeSpacer = f);
-  _applyField(SettingType.lsc, suspensionType, oldSettings?.lsc, controller.lsc,
-      isEditing, changes, (f) => newSettings.lsc = f);
-  _applyField(SettingType.hsc, suspensionType, oldSettings?.hsc, controller.hsc,
-      isEditing, changes, (f) => newSettings.hsc = f);
-  _applyField(SettingType.lsr, suspensionType, oldSettings?.lsr, controller.lsr,
-      isEditing, changes, (f) => newSettings.lsr = f);
-  _applyField(SettingType.hsr, suspensionType, oldSettings?.hsr, controller.hsr,
-      isEditing, changes, (f) => newSettings.hsr = f);
-}
-
-void _applyTyres(
-  TyresFormController controller,
-  Tyres? oldTyres,
-  SettingChanges changes,
-  Tyres newTyres,
-) {
-  final isEditing = oldTyres != null;
-  _applyField(
-      SettingType.frontTyrePressure,
-      SuspensionType.tyre,
-      oldTyres?.front,
-      controller.front,
-      isEditing,
-      changes,
-      (f) => newTyres.front = f);
-  _applyField(SettingType.rearTyrePressure, SuspensionType.tyre, oldTyres?.rear,
-      controller.rear, isEditing, changes, (f) => newTyres.rear = f);
-}
-
-class TyresFormController {
-  TyresFormController(Tyres? tyres)
-      : front = FieldFormController(
-          enabled: tyres?.front != null,
-          value: tyres?.front?.value,
-          unit: tyres?.front?.unit ??
-              Settings.defaultUnits[SettingType.frontTyrePressure]!,
-        ),
-        rear = FieldFormController(
-          enabled: tyres?.rear != null,
-          value: tyres?.rear?.value,
-          unit: tyres?.rear?.unit ??
-              Settings.defaultUnits[SettingType.rearTyrePressure]!,
-        );
-
-  final FieldFormController front;
-  final FieldFormController rear;
-
-  void dispose() {
-    front.dispose();
-    rear.dispose();
+  // Handle fields removed from the form (were active, now gone).
+  if (isEditing && original != null) {
+    final activeFormIds = ctrl.fields.map((f) => f.id).toSet();
+    for (final origField in original.activeFields) {
+      if (!activeFormIds.contains(origField.id)) {
+        final idx = target.fields.indexWhere((f) => f.id == origField.id);
+        if (idx >= 0) {
+          target.fields[idx] =
+              target.fields[idx].copyWith(deleted: true, clearValue: true);
+        }
+        target.layout = target.layout
+            .map((row) => row.where((id) => id != origField.id).toList())
+            .where((row) => row.isNotEmpty)
+            .toList();
+        changes.changes.add(SettingChange(
+          suspensionType: suspensionType,
+          fieldId: origField.id,
+          oldValue: origField.value,
+          newValue: null,
+          oldEnabled: true,
+          newEnabled: false,
+        ));
+      }
+    }
   }
 }
 
-class SettingsFormController {
-  SettingsFormController(Settings? settings)
-      : airPressure = FieldFormController(
-          enabled: settings?.airPressure != null,
-          value: settings?.airPressure?.value,
-          unit: settings?.airPressure?.unit ??
-              Settings.defaultUnits[SettingType.airPressure]!,
-        ),
-        sag = FieldFormController(
-          enabled: settings?.sag != null,
-          value: settings?.sag?.value,
-          unit: settings?.sag?.unit ?? Settings.defaultUnits[SettingType.sag]!,
-        ),
-        volumeSpacer = FieldFormController(
-          enabled: settings?.volumeSpacer != null,
-          value: settings?.volumeSpacer?.value,
-          unit: settings?.volumeSpacer?.unit ??
-              Settings.defaultUnits[SettingType.volumeSpacer]!,
-        ),
-        lsc = FieldFormController(
-          enabled: settings?.lsc != null,
-          value: settings?.lsc?.value,
-          unit: settings?.lsc?.unit ?? Settings.defaultUnits[SettingType.lsc]!,
-        ),
-        hsc = FieldFormController(
-          enabled: settings?.hsc != null,
-          value: settings?.hsc?.value,
-          unit: settings?.hsc?.unit ?? Settings.defaultUnits[SettingType.hsc]!,
-        ),
-        lsr = FieldFormController(
-          enabled: settings?.lsr != null,
-          value: settings?.lsr?.value,
-          unit: settings?.lsr?.unit ?? Settings.defaultUnits[SettingType.lsr]!,
-        ),
-        hsr = FieldFormController(
-          enabled: settings?.hsr != null,
-          value: settings?.hsr?.value,
-          unit: settings?.hsr?.unit ?? Settings.defaultUnits[SettingType.hsr]!,
-        ),
-        serialNumber = TextEditingController(text: settings?.serialNumber),
-        infoUrl = TextEditingController(text: settings?.infoUrl);
+class SectionFormController {
+  SectionFormController(SectionSettings? section)
+      : fields =
+            section?.activeFields.map(FieldFormController.fromField).toList() ??
+                [],
+        layout =
+            section?.layout.map((row) => List<String>.from(row)).toList() ?? [],
+        serialNumber = TextEditingController(text: section?.serialNumber),
+        infoUrl = TextEditingController(text: section?.infoUrl);
 
-  final FieldFormController airPressure;
-  final FieldFormController volumeSpacer;
-  final FieldFormController sag;
-  final FieldFormController lsr;
-  final FieldFormController hsr;
-  final FieldFormController lsc;
-  final FieldFormController hsc;
+  final List<FieldFormController> fields;
+  List<List<String>> layout;
   final TextEditingController serialNumber;
   final TextEditingController infoUrl;
 
+  bool get hasActiveFields => fields.isNotEmpty;
+
+  /// Returns layout rows resolved to their [FieldFormController]s.
+  List<List<FieldFormController>> get layoutControllers {
+    final map = {for (final f in fields) f.id: f};
+    return layout
+        .map((row) =>
+            row.map((id) => map[id]).whereType<FieldFormController>().toList())
+        .where((row) => row.isNotEmpty)
+        .toList();
+  }
+
+  void addFields(SectionSettings section) {
+    for (final f in section.activeFields) {
+      fields.add(FieldFormController(
+        id: f.id,
+        fieldName: f.name,
+        unit: f.unit,
+        isNew: true,
+      ));
+    }
+    layout = section.layout.map((row) => List<String>.from(row)).toList();
+  }
+
+  void addField(String fieldName, String unit) {
+    final ctrl = FieldFormController(
+      id: const Uuid().v4(),
+      fieldName: fieldName,
+      unit: unit,
+      isNew: true,
+    );
+    fields.add(ctrl);
+    layout.add([ctrl.id]);
+  }
+
+  void removeField(String fieldId) {
+    fields.removeWhere((f) => f.id == fieldId);
+    layout = layout
+        .map((row) => row.where((id) => id != fieldId).toList())
+        .where((row) => row.isNotEmpty)
+        .toList();
+  }
+
   void dispose() {
-    airPressure.dispose();
-    volumeSpacer.dispose();
-    sag.dispose();
-    lsr.dispose();
-    hsr.dispose();
-    lsc.dispose();
-    hsc.dispose();
+    for (final f in fields) {
+      f.dispose();
+    }
     serialNumber.dispose();
     infoUrl.dispose();
   }
 }
 
 class FieldFormController {
-  FieldFormController({required bool enabled, num? value, required String unit})
-      : enabled = ValueNotifier(enabled),
-        value = TextEditingController(text: value?.toString() ?? ''),
-        unit = TextEditingController(text: unit);
+  FieldFormController({
+    required this.id,
+    required String fieldName,
+    required String unit,
+    num? value,
+    this.isNew = false,
+  })  : name = TextEditingController(text: fieldName),
+        unit = TextEditingController(text: unit),
+        value = TextEditingController(text: value?.toString() ?? '');
 
-  final ValueNotifier<bool> enabled;
-  final TextEditingController value;
+  factory FieldFormController.fromField(Field field) => FieldFormController(
+        id: field.id,
+        fieldName: field.name,
+        unit: field.unit,
+        value: field.value,
+      );
+
+  final String id;
+  final bool isNew;
+  final TextEditingController name;
   final TextEditingController unit;
+  final TextEditingController value;
 
   void dispose() {
-    enabled.dispose();
-    value.dispose();
+    name.dispose();
     unit.dispose();
+    value.dispose();
   }
 }

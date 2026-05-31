@@ -50,3 +50,17 @@ The app uses **Provider** for state management with a simple single-file-on-disk
 **Navigation flow**: `HomePage` → `SetupDetail` (view + history) or `SetupEdit` (create/edit). Edit computes a diff on save, appends a `SettingChanges` to the setup history, then calls `SetupStorageModel.upsert()`.
 
 **Custom assets**: `fonts/SuspensionIcons.ttf` with constants in `lib/suspension_icons.dart`; `assets/icon/icon-white.svg` used in the AppBar.
+
+## DraggableGrid (`lib/draggable_grid.dart`)
+
+This file has subtle interactions. After any change, test on a real device or emulator — `flutter analyze` cannot catch drag-interaction regressions.
+
+### Non-obvious invariants — do not break these
+
+- **Zone calculation uses nominal width, not animated width.** `rb.size.width` on an `AnimatedContainer` child may be mid-animation. Always use `_rowWidth / rowLen` for zone boundaries.
+- **Zone calculation uses card-0's position for `rowLeft`.** Card 0 is always at the row's left edge regardless of its own width. Using the hovered card's position drifts as entering cards animate.
+- **`rb.localToGlobal` includes `AnimatedSlide` transform.** When `AnimatedSlide` has a non-zero offset, `localToGlobal` reports the visual position, not the layout position. This corrupts zone calculations.
+- **`_cardSlideOffsets` must be cleared when `_enteringCards` is non-empty.** Active slide transforms + entering width animation cause zone flip-flopping. `didUpdateWidget` clears both simultaneously.
+- **`AnimatedContainer` children in a Row must not overflow.** The `_enteringCards` mechanism ensures entering cards start at width 0 so `sum(widths) ≤ rowWidth` at all times. The entering detection rules (Rule 1 + Rule 2 in `didUpdateWidget`) cover all cross-row move cases.
+- **Window resize must not animate card widths.** When `_rowWidth` changes, the Row immediately adopts the new width but `AnimatedContainer` would animate from the old `cardWidth`, causing the combined child width to exceed the Row's new width. `_rowWidthSnapping` detects a `_rowWidth` change and forces `duration: Duration.zero` for that one frame, then resets.
+- **Do not use `Stack + AnimatedPositioned` inside the grid rows.** This causes a Flutter semantics `parentDataDirty` assertion in debug mode. The current layout uses `ClipRect + IntrinsicHeight + Row + AnimatedContainer + AnimatedSlide`.
