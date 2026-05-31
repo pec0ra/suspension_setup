@@ -11,7 +11,14 @@ class SetupFormController {
       : name = TextEditingController(text: setup?.name),
         fork = SectionFormController(setup?.fork),
         shock = SectionFormController(setup?.shock),
-        tyres = SectionFormController(setup?.tyres);
+        tyres = SectionFormController(setup?.tyres) {
+    if (setup == null) {
+      final defaults = Setup.getDefault();
+      fork.addFields(defaults.fork);
+      shock.addFields(defaults.shock);
+      tyres.addFields(defaults.tyres);
+    }
+  }
 
   final TextEditingController name;
   final SectionFormController fork;
@@ -55,6 +62,8 @@ class SetupFormController {
     newSetup.fork.infoUrl = trimmed(fork.infoUrl);
     newSetup.shock.serialNumber = trimmed(shock.serialNumber);
     newSetup.shock.infoUrl = trimmed(shock.infoUrl);
+    newSetup.tyres.serialNumber = trimmed(tyres.serialNumber);
+    newSetup.tyres.infoUrl = trimmed(tyres.infoUrl);
 
     return (newSetup, changes);
   }
@@ -183,6 +192,18 @@ class SectionFormController {
             row.map((id) => map[id]).whereType<FieldFormController>().toList())
         .where((row) => row.isNotEmpty)
         .toList();
+  }
+
+  void addFields(SectionSettings section) {
+    for (final f in section.activeFields) {
+      fields.add(FieldFormController(
+        id: f.id,
+        fieldName: f.name,
+        unit: f.unit,
+        isNew: true,
+      ));
+    }
+    layout = section.layout.map((row) => List<String>.from(row)).toList();
   }
 
   void addField(String fieldName, String unit) {

@@ -26,7 +26,9 @@ class Setup {
       name: json['name'],
       fork: SectionSettings.fromJson(json['fork']),
       shock: SectionSettings.fromJson(json['shock']),
-      tyres: SectionSettings.fromJson(json['tyres']),
+      tyres: json['tyres'] != null
+          ? SectionSettings.fromJson(json['tyres'] as Map<String, dynamic>)
+          : SectionSettings(fields: [], layout: []),
       history: List<SettingChanges>.from(
           json['history'].map((e) => SettingChanges.fromJson(e))),
     );

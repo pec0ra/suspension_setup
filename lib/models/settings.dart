@@ -49,12 +49,15 @@ class SectionSettings {
     final airPressure = Field(name: 'Air Pressure', unit: 'PSI');
     final sag = Field(name: 'Sag', unit: '%');
     final lsc = Field(name: 'Low Speed Compression', unit: 'Clicks');
+    final hsc = Field(name: 'High Speed Compression', unit: 'Clicks');
     final lsr = Field(name: 'Low Speed Rebound', unit: 'Clicks');
+    final hsr = Field(name: 'High Speed Rebound', unit: 'Clicks');
     return SectionSettings(
-      fields: [airPressure, sag, lsc, lsr],
+      fields: [airPressure, sag, lsc, hsc, lsr, hsr],
       layout: [
         [airPressure.id, sag.id],
-        [lsc.id, lsr.id],
+        [lsc.id, hsc.id],
+        [lsr.id, hsr.id],
       ],
     );
   }

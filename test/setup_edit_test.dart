@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:suspension_setup/models/field.dart';
+import 'package:suspension_setup/models/setting_change.dart';
 import 'package:suspension_setup/models/settings.dart';
 import 'package:suspension_setup/models/setup.dart';
 import 'package:suspension_setup/setting_tiles.dart';
@@ -122,7 +123,7 @@ void main() {
       expect(find.byTooltip('Save setup'), findsOneWidget);
     });
 
-    testWidgets('FAB switches to Edit values after adding a field',
+    testWidgets('new setup shows Edit values tooltip immediately',
         (tester) async {
       final model = _FakeStorageModel();
 
@@ -130,24 +131,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Tap the first "Add field" button (Fork section)
-      await tester.tap(find.text('Add field').first);
-      await tester.pumpAndSettle();
-
-      // Fill in the dialog
-      await tester.enterText(
-        find
-            .descendant(
-              of: find.byType(AlertDialog),
-              matching: find.byType(TextField),
-            )
-            .first,
-        'Air Pressure',
-      );
-      await tester.pump();
-      await tester.tap(find.text('Add'));
-      await tester.pumpAndSettle();
-
+      // Default fields are pre-populated as new, so FAB starts as "Edit values".
       expect(find.byTooltip('Edit values'), findsOneWidget);
     });
   });
@@ -207,6 +191,77 @@ void main() {
         ),
       );
       expect(restoredField.controller!.text, '73');
+    });
+  });
+
+  group('SetupEdit → ValueEdit save (new field)', () {
+    testWidgets('adding a field and saving persists the new field with value',
+        (tester) async {
+      final model = _FakeStorageModel();
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 73);
+      final setup = _makeSetup(forkFields: [airField]);
+
+      await tester.pumpWidget(_setupEditHarness(model, setup));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // Add a new field to the fork section.
+      await tester.tap(find.text('Add field').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(TextField),
+            )
+            .first,
+        'Sag',
+      );
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      // Navigate to ValueEdit.
+      await tester.tap(find.byTooltip('Edit values'));
+      await tester.pumpAndSettle();
+
+      // Enter a value for the new Sag field (second FieldValueCard).
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(FieldValueCard).at(1),
+          matching: find.byType(TextFormField),
+        ),
+        '25',
+      );
+      await tester.pump();
+
+      // Tap Save FAB → comment dialog appears.
+      await tester.tap(find.byTooltip('Save values'));
+      await tester.pumpAndSettle();
+
+      // Dismiss the comment dialog.
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(model.lastUpserted, isNotNull);
+      final fork = model.lastUpserted!.fork;
+      expect(
+        fork.activeFields.firstWhere((f) => f.name == 'Air Pressure').value,
+        73,
+      );
+      expect(
+        fork.activeFields.firstWhere((f) => f.name == 'Sag').value,
+        25,
+      );
+      // The new field must appear in the history as an enabled change.
+      final lastChanges = model.lastUpserted!.history.last.changes;
+      expect(
+        lastChanges.any((c) =>
+            c.suspensionType == SuspensionType.fork &&
+            c.newEnabled == true &&
+            c.newValue == 25),
+        isTrue,
+      );
+      expect(find.text('Setup saved successfully'), findsOneWidget);
     });
   });
 

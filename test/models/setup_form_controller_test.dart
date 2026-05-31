@@ -24,17 +24,19 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('hasNewlyAddedFields', () {
-    test('null setup — no fields added → false', () {
+    test('null setup — default fields pre-populated as new → true', () {
       final ctrl = SetupFormController(null);
       addTearDown(ctrl.dispose);
-      expect(ctrl.hasNewlyAddedFields(), isFalse);
+      expect(ctrl.hasNewlyAddedFields(), isTrue);
     });
 
-    test('null setup — field added → true', () {
+    test('null setup — default fields present in fork, shock, tyres', () {
       final ctrl = SetupFormController(null);
       addTearDown(ctrl.dispose);
-      ctrl.fork.addField('Air Pressure', 'PSI');
-      expect(ctrl.hasNewlyAddedFields(), isTrue);
+      expect(ctrl.fork.fields, isNotEmpty);
+      expect(ctrl.shock.fields, isNotEmpty);
+      expect(ctrl.tyres.fields, isNotEmpty);
+      expect(ctrl.fork.fields.every((f) => f.isNew), isTrue);
     });
 
     test('existing setup — no new fields → false', () {

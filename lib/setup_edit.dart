@@ -129,16 +129,19 @@ class _SetupEditState extends State<SetupEdit> {
 
   Widget _buildSectionGrid(SectionFormController section) {
     if (section.layout.isEmpty) return const SizedBox.shrink();
+    final ctrlMap = {for (final f in section.fields) f.id: f};
     return DraggableGrid(
       layout: section.layout,
       itemBuilder: (id) {
-        final ctrl = section.fields.firstWhere((f) => f.id == id);
+        final ctrl = ctrlMap[id];
+        if (ctrl == null) return const SizedBox.shrink();
         return FieldConfigTile(controller: ctrl);
       },
       onLayoutChanged: (newLayout) =>
           setState(() => section.layout = newLayout),
       onItemTap: (id) {
-        final ctrl = section.fields.firstWhere((f) => f.id == id);
+        final ctrl = ctrlMap[id];
+        if (ctrl == null) return;
         _showEditFieldSheet(context, section, ctrl);
       },
     );

@@ -211,6 +211,89 @@ void main() {
       expect(history[0]['isCreationEntry'], true);
     });
 
+    test('v3 → v4 translates settingType to fieldId in history', () {
+      final v3 = {
+        'schemaVersion': 3,
+        'setups': {
+          'id-1': {
+            'id': 'id-1',
+            'name': 'Test',
+            'fork': {
+              'airPressure': {'value': 100, 'unit': 'PSI'},
+              'sag': null,
+              'volumeSpacer': null,
+              'lsc': null,
+              'hsc': null,
+              'lsr': null,
+              'hsr': null,
+            },
+            'shock': <String, dynamic>{},
+            'tyres': {
+              'front': {'value': 28, 'unit': 'PSI'},
+              'rear': null,
+            },
+            'history': [
+              {
+                'id': 'hist-1',
+                'changes': [
+                  {
+                    'suspensionType': 'fork',
+                    'settingType': 'airPressure',
+                    'oldValue': 90,
+                    'newValue': 100,
+                    'oldEnabled': null,
+                    'newEnabled': null,
+                  },
+                  {
+                    'suspensionType': 'tyre',
+                    'settingType': 'frontTyrePressure',
+                    'oldValue': 25,
+                    'newValue': 28,
+                    'oldEnabled': null,
+                    'newEnabled': null,
+                  },
+                ],
+                'date': '2024-01-02T00:00:00.000Z',
+                'comment': 'Pressure tweak',
+              },
+            ],
+          },
+        },
+      };
+
+      final result = migrateIfNeeded(v3);
+
+      // Extract the ids assigned to the fields during migration.
+      final forkFields = result['setups']['id-1']['fork']['fields'] as List;
+      final airPressureId = (forkFields.firstWhere(
+              (f) => (f as Map)['name'] == 'Air Pressure') as Map)['id']
+          as String;
+
+      final tyreFields = result['setups']['id-1']['tyres']['fields'] as List;
+      final frontTyreId = (tyreFields.firstWhere(
+              (f) => (f as Map)['name'] == 'Front Tyre Pressure') as Map)['id']
+          as String;
+
+      final changes =
+          result['setups']['id-1']['history'][0]['changes'] as List;
+
+      final forkChange =
+          changes.firstWhere((c) => (c as Map)['suspensionType'] == 'fork')
+              as Map;
+      expect(forkChange.containsKey('settingType'), isFalse);
+      expect(forkChange['fieldId'], airPressureId);
+      expect(forkChange['oldValue'], 90);
+      expect(forkChange['newValue'], 100);
+
+      final tyreChange =
+          changes.firstWhere((c) => (c as Map)['suspensionType'] == 'tyre')
+              as Map;
+      expect(tyreChange.containsKey('settingType'), isFalse);
+      expect(tyreChange['fieldId'], frontTyreId);
+      expect(tyreChange['oldValue'], 25);
+      expect(tyreChange['newValue'], 28);
+    });
+
     test('returns future schema version data unchanged', () {
       final futureData = {
         'schemaVersion': 99,
