@@ -59,12 +59,7 @@ Future<void> _takeScreenshots(
   await tester.pumpAndSettle();
   await _screenshot(binding, tester, '${idx(2)}_history$suffix');
 
-  tester
-      .widget<IconButton>(
-        find.ancestor(
-            of: find.byIcon(Icons.edit), matching: find.byType(IconButton)),
-      )
-      .onPressed!();
+  await tester.tap(find.byIcon(Icons.tune));
   await tester.pumpAndSettle();
   await _screenshot(binding, tester, '${idx(3)}_edit$suffix');
 
@@ -88,30 +83,152 @@ Future<void> _screenshot(
 }
 
 const _fixture = {
-  'schemaVersion': 3,
+  'schemaVersion': 4,
   'setups': {
     'a5f0c760-7346-11ef-89aa-5137c552c0bc': {
       'id': 'a5f0c760-7346-11ef-89aa-5137c552c0bc',
       'name': 'Hugene',
       'fork': {
-        'airPressure': {'value': 70, 'unit': 'PSI'},
-        'volumeSpacer': {'value': 1, 'unit': 'Spacers'},
-        'sag': {'value': 20, 'unit': '%'},
-        'lsr': {'value': 7, 'unit': 'Clicks'},
-        'hsr': {'value': 6, 'unit': 'Clicks'},
-        'lsc': {'value': 10, 'unit': 'Clicks'},
-        'hsc': {'value': 7, 'unit': 'Clicks'},
+        'fields': [
+          {
+            'id': 'hf-air',
+            'name': 'Air Pressure',
+            'unit': 'PSI',
+            'value': 70,
+            'deleted': false
+          },
+          {
+            'id': 'hf-sag',
+            'name': 'Sag',
+            'unit': '%',
+            'value': 20,
+            'deleted': false
+          },
+          {
+            'id': 'hf-vol',
+            'name': 'Volume',
+            'unit': 'Spacers',
+            'value': 1,
+            'deleted': false
+          },
+          {
+            'id': 'hf-lsc',
+            'name': 'Low Speed Compression',
+            'unit': 'Clicks',
+            'value': 10,
+            'deleted': false
+          },
+          {
+            'id': 'hf-hsc',
+            'name': 'High Speed Compression',
+            'unit': 'Clicks',
+            'value': 7,
+            'deleted': false
+          },
+          {
+            'id': 'hf-lsr',
+            'name': 'Low Speed Rebound',
+            'unit': 'Clicks',
+            'value': 7,
+            'deleted': false
+          },
+          {
+            'id': 'hf-hsr',
+            'name': 'High Speed Rebound',
+            'unit': 'Clicks',
+            'value': 6,
+            'deleted': false
+          },
+        ],
+        'layout': [
+          ['hf-air', 'hf-sag', 'hf-vol'],
+          ['hf-lsc', 'hf-hsc'],
+          ['hf-lsr', 'hf-hsr'],
+        ],
+        'serialNumber': null,
+        'infoUrl': null,
       },
       'shock': {
-        'airPressure': {'value': 168, 'unit': 'PSI'},
-        'volumeSpacer': null,
-        'sag': {'value': 27, 'unit': '%'},
-        'lsr': {'value': 8, 'unit': 'Clicks'},
-        'hsr': null,
-        'lsc': {'value': 5, 'unit': 'Clicks'},
-        'hsc': null,
+        'fields': [
+          {
+            'id': 'hs-air',
+            'name': 'Air Pressure',
+            'unit': 'PSI',
+            'value': 168,
+            'deleted': false
+          },
+          {
+            'id': 'hs-sag',
+            'name': 'Sag',
+            'unit': '%',
+            'value': 27,
+            'deleted': false
+          },
+          {
+            'id': 'hs-vol',
+            'name': 'Volume',
+            'unit': 'Spacers',
+            'value': null,
+            'deleted': true
+          },
+          {
+            'id': 'hs-lsc',
+            'name': 'Low Speed Compression',
+            'unit': 'Clicks',
+            'value': 5,
+            'deleted': false
+          },
+          {
+            'id': 'hs-hsc',
+            'name': 'High Speed Compression',
+            'unit': 'Clicks',
+            'value': null,
+            'deleted': true
+          },
+          {
+            'id': 'hs-lsr',
+            'name': 'Low Speed Rebound',
+            'unit': 'Clicks',
+            'value': 8,
+            'deleted': false
+          },
+          {
+            'id': 'hs-hsr',
+            'name': 'High Speed Rebound',
+            'unit': 'Clicks',
+            'value': null,
+            'deleted': true
+          },
+        ],
+        'layout': [
+          ['hs-air', 'hs-sag'],
+          ['hs-lsc'],
+          ['hs-lsr'],
+        ],
+        'serialNumber': null,
+        'infoUrl': null,
       },
-      'tyres': {'front': null, 'rear': null},
+      'tyres': {
+        'fields': [
+          {
+            'id': 'ht-front',
+            'name': 'Front Tyre Pressure',
+            'unit': 'PSI',
+            'value': null,
+            'deleted': true
+          },
+          {
+            'id': 'ht-rear',
+            'name': 'Rear Tyre Pressure',
+            'unit': 'PSI',
+            'value': null,
+            'deleted': true
+          },
+        ],
+        'layout': [],
+        'serialNumber': null,
+        'infoUrl': null,
+      },
       'history': [
         {
           'id': 'a5f0c760-7346-11ef-89aa-000000000001',
@@ -126,26 +243,146 @@ const _fixture = {
       'id': 'f65fdaf0-735b-11ef-8bca-39bc253932cf',
       'name': 'Yeti',
       'fork': {
-        'airPressure': {'value': 73, 'unit': 'PSI'},
-        'volumeSpacer': {'value': 2, 'unit': 'Spacers'},
-        'sag': {'value': 17, 'unit': '%'},
-        'lsr': {'value': 7, 'unit': 'Clicks'},
-        'hsr': {'value': 6, 'unit': 'Clicks'},
-        'lsc': {'value': 19, 'unit': 'Clicks'},
-        'hsc': {'value': 6, 'unit': 'Clicks'},
+        'fields': [
+          {
+            'id': 'yf-air',
+            'name': 'Air Pressure',
+            'unit': 'PSI',
+            'value': 73,
+            'deleted': false
+          },
+          {
+            'id': 'yf-sag',
+            'name': 'Sag',
+            'unit': '%',
+            'value': 17,
+            'deleted': false
+          },
+          {
+            'id': 'yf-vol',
+            'name': 'Volume',
+            'unit': 'Spacers',
+            'value': 2,
+            'deleted': false
+          },
+          {
+            'id': 'yf-lsc',
+            'name': 'Low Speed Compression',
+            'unit': 'Clicks',
+            'value': 19,
+            'deleted': false
+          },
+          {
+            'id': 'yf-hsc',
+            'name': 'High Speed Compression',
+            'unit': 'Clicks',
+            'value': 6,
+            'deleted': false
+          },
+          {
+            'id': 'yf-lsr',
+            'name': 'Low Speed Rebound',
+            'unit': 'Clicks',
+            'value': 7,
+            'deleted': false
+          },
+          {
+            'id': 'yf-hsr',
+            'name': 'High Speed Rebound',
+            'unit': 'Clicks',
+            'value': 6,
+            'deleted': false
+          },
+        ],
+        'layout': [
+          ['yf-air', 'yf-sag', 'yf-vol'],
+          ['yf-lsc', 'yf-hsc'],
+          ['yf-lsr', 'yf-hsr'],
+        ],
         'serialNumber': 'WB220A01234',
         'infoUrl': 'https://tech.ridefox.com/bike/service-procedures/2962/2025',
       },
       'shock': {
-        'airPressure': {'value': 165, 'unit': 'PSI'},
-        'volumeSpacer': null,
-        'sag': {'value': 27, 'unit': '%'},
-        'lsr': {'value': 8, 'unit': 'Clicks'},
-        'hsr': null,
-        'lsc': {'value': 8, 'unit': 'Clicks'},
-        'hsc': null,
+        'fields': [
+          {
+            'id': 'ys-air',
+            'name': 'Air Pressure',
+            'unit': 'PSI',
+            'value': 165,
+            'deleted': false
+          },
+          {
+            'id': 'ys-sag',
+            'name': 'Sag',
+            'unit': '%',
+            'value': 27,
+            'deleted': false
+          },
+          {
+            'id': 'ys-vol',
+            'name': 'Volume',
+            'unit': 'Spacers',
+            'value': null,
+            'deleted': true
+          },
+          {
+            'id': 'ys-lsc',
+            'name': 'Low Speed Compression',
+            'unit': 'Clicks',
+            'value': 8,
+            'deleted': false
+          },
+          {
+            'id': 'ys-hsc',
+            'name': 'High Speed Compression',
+            'unit': 'Clicks',
+            'value': null,
+            'deleted': true
+          },
+          {
+            'id': 'ys-lsr',
+            'name': 'Low Speed Rebound',
+            'unit': 'Clicks',
+            'value': 8,
+            'deleted': false
+          },
+          {
+            'id': 'ys-hsr',
+            'name': 'High Speed Rebound',
+            'unit': 'Clicks',
+            'value': null,
+            'deleted': true
+          },
+        ],
+        'layout': [
+          ['ys-air', 'ys-sag'],
+          ['ys-lsc'],
+          ['ys-lsr'],
+        ],
+        'serialNumber': null,
+        'infoUrl': null,
       },
-      'tyres': {'front': null, 'rear': null},
+      'tyres': {
+        'fields': [
+          {
+            'id': 'yt-front',
+            'name': 'Front Tyre Pressure',
+            'unit': 'PSI',
+            'value': null,
+            'deleted': true
+          },
+          {
+            'id': 'yt-rear',
+            'name': 'Rear Tyre Pressure',
+            'unit': 'PSI',
+            'value': null,
+            'deleted': true
+          },
+        ],
+        'layout': [],
+        'serialNumber': null,
+        'infoUrl': null,
+      },
       'history': [
         {
           'id': 'f65fdaf0-735b-11ef-8bca-000000000001',
@@ -159,7 +396,7 @@ const _fixture = {
           'changes': [
             {
               'suspensionType': 'shock',
-              'settingType': 'airPressure',
+              'fieldId': 'ys-air',
               'oldValue': 168,
               'newValue': 165,
               'oldEnabled': null,
@@ -167,7 +404,7 @@ const _fixture = {
             },
             {
               'suspensionType': 'shock',
-              'settingType': 'lsc',
+              'fieldId': 'ys-lsc',
               'oldValue': 6,
               'newValue': 8,
               'oldEnabled': null,
@@ -182,7 +419,7 @@ const _fixture = {
           'changes': [
             {
               'suspensionType': 'fork',
-              'settingType': 'airPressure',
+              'fieldId': 'yf-air',
               'oldValue': 75,
               'newValue': 73,
               'oldEnabled': null,
@@ -190,7 +427,7 @@ const _fixture = {
             },
             {
               'suspensionType': 'fork',
-              'settingType': 'volumeSpacer',
+              'fieldId': 'yf-vol',
               'oldValue': 1,
               'newValue': 2,
               'oldEnabled': null,
@@ -198,7 +435,7 @@ const _fixture = {
             },
             {
               'suspensionType': 'fork',
-              'settingType': 'lsc',
+              'fieldId': 'yf-lsc',
               'oldValue': 10,
               'newValue': 19,
               'oldEnabled': null,
