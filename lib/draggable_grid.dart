@@ -26,8 +26,92 @@ class _DraggableGridState extends State<DraggableGrid> {
   Offset? _dragTouchOffset;
   Size? _dragSize;
   final _cardKeys = <String, GlobalKey>{};
-
+  final _enteringCards = <String>{};
+  String? _draggingId;
+  final _cardCols = <String, int>{};
+  final _cardSlideOffsets = <String, Offset>{};
+  double _rowWidth = 0;
   GlobalKey _cardKey(String id) => _cardKeys.putIfAbsent(id, () => GlobalKey());
+
+  @override
+  void didUpdateWidget(DraggableGrid old) {
+    super.didUpdateWidget(old);
+    final dragId = _draggingId;
+    if (dragId == null) return;
+    int? oldR;
+    for (int r = 0; r < old.layout.length; r++) {
+      if (old.layout[r].contains(dragId)) {
+        oldR = r;
+        break;
+      }
+    }
+    if (oldR == null) return;
+    final oldRowIds = old.layout[oldR].toSet();
+    final entering = <String>{};
+
+    // Rule 1: dragged card crossed into a different logical row.
+    int? newR;
+    for (int r = 0; r < widget.layout.length; r++) {
+      if (!widget.layout[r].contains(dragId)) continue;
+      newR = r;
+      final movedToNewRowIndex = r != oldR;
+      final joinedNewCompanions =
+          widget.layout[r].any((c) => c != dragId && !oldRowIds.contains(c));
+      if (movedToNewRowIndex || joinedNewCompanions) entering.add(dragId);
+      break;
+    }
+
+    // Rule 2: when the dragged card's Row column index stayed the same but gained
+    // new cards, those new cards' target widths would overflow alongside the dragged
+    // card's existing (large) AC width — so they must also start at 0.
+    if (newR != null &&
+        entering.contains(dragId) &&
+        newR < old.layout.length &&
+        old.layout[newR].contains(dragId)) {
+      final oldAtNewR = old.layout[newR].toSet();
+      for (final id in widget.layout[newR]) {
+        if (id != dragId && !oldAtNewR.contains(id)) entering.add(id);
+      }
+    }
+
+    if (entering.isNotEmpty) {
+      _enteringCards.addAll(entering);
+      // Clear any active slide offsets: the entering animation takes over
+      // visually, and residual slide transforms corrupt zone calculations.
+      _cardSlideOffsets.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _enteringCards.removeAll(entering));
+      });
+    }
+
+    // Slide animation: only when no card is entering. Still update _cardCols
+    // every frame so future slide detections start from the correct column.
+    final slideCards = <String>{};
+    for (int r = 0; r < widget.layout.length; r++) {
+      for (int c = 0; c < widget.layout[r].length; c++) {
+        final id = widget.layout[r][c];
+        final prevC = _cardCols[id];
+        final wasInSameRow =
+            r < old.layout.length && old.layout[r].contains(id);
+        if (entering.isEmpty && wasInSameRow && prevC != null && prevC != c) {
+          _cardSlideOffsets[id] = Offset((prevC - c).toDouble(), 0);
+          slideCards.add(id);
+        }
+        _cardCols[id] = c;
+      }
+    }
+    if (slideCards.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            for (final id in slideCards) {
+              _cardSlideOffsets.remove(id);
+            }
+          });
+        }
+      });
+    }
+  }
 
   bool _isNoOp(String id, _DropTarget target) {
     int srcRow = -1, srcCol = -1;
@@ -131,8 +215,18 @@ class _DraggableGridState extends State<DraggableGrid> {
     } else {
       final pointerX = details.offset.dx + touchOffset.dx;
       final rowLen = widget.layout[r].length;
-      final rowLeft = cardTopLeft.dx - c * rb.size.width;
-      final rowWidth = rb.size.width * rowLen;
+      final nominalCardWidth =
+          _rowWidth > 0 ? _rowWidth / rowLen : rb.size.width;
+      // Card 0 always sits at the row's left edge regardless of its own width.
+      // Using it gives a stable rowLeft even while entering cards animate.
+      final firstRb = c == 0
+          ? rb
+          : (_cardKey(widget.layout[r][0])
+                  .currentContext
+                  ?.findRenderObject() as RenderBox?) ??
+              rb;
+      final rowLeft = firstRb.localToGlobal(Offset.zero).dx;
+      final rowWidth = nominalCardWidth * rowLen;
       final position =
           ((pointerX - rowLeft) * (rowLen + 1) / rowWidth)
               .floor()
@@ -144,20 +238,25 @@ class _DraggableGridState extends State<DraggableGrid> {
     _lastTarget = target;
 
     if (target is _NewRowTarget && !_seenInRowSinceLastBetweenRows) return;
+    if (target is _InRowTarget) _seenInRowSinceLastBetweenRows = true;
     if (_isNoOp(details.data, target)) return;
-
-    if (target is _NewRowTarget) {
-      _seenInRowSinceLastBetweenRows = false;
-    } else {
-      _seenInRowSinceLastBetweenRows = true;
-    }
+    if (target is _NewRowTarget) _seenInRowSinceLastBetweenRows = false;
 
     widget.onLayoutChanged(_computeNewLayout(details.data, target));
   }
 
-  Widget _buildCardSlot(int r, int c) {
+  Widget _buildCardContent(int r, int c) {
     final id = widget.layout[r][c];
-    return Expanded(
+    // Key includes column so a new AnimatedSlide is created when the card
+    // shifts columns. When entering, a special key forces a fresh instance at
+    // Offset.zero so no residual slide transform corrupts zone calculations.
+    return AnimatedSlide(
+      key: _enteringCards.contains(id)
+          ? ValueKey('${id}_slide_entering')
+          : ValueKey('${id}_slide_$c'),
+      offset: _cardSlideOffsets[id] ?? Offset.zero,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
       child: DragTarget<String>(
         key: _cardKey(id),
         onWillAcceptWithDetails: (details) {
@@ -175,6 +274,7 @@ class _DraggableGridState extends State<DraggableGrid> {
               _isDragging = true;
               _dragTouchOffset = touchOffset;
               _dragSize = size;
+              _draggingId = id;
             });
           },
           onDragEnded: () {
@@ -182,6 +282,7 @@ class _DraggableGridState extends State<DraggableGrid> {
             setState(() {
               _isDragging = false;
               _lastTarget = null;
+              _draggingId = null;
             });
           },
         ),
@@ -195,14 +296,34 @@ class _DraggableGridState extends State<DraggableGrid> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (int r = 0; r < widget.layout.length; r++)
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (int c = 0; c < widget.layout[r].length; c++)
-                  _buildCardSlot(r, c),
-              ],
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              _rowWidth = constraints.maxWidth;
+              final rowLen = widget.layout[r].length;
+              final cardWidth = _rowWidth / rowLen;
+              // ClipRect clips the visual overflow from AnimatedSlide during
+              // in-row slide animations (paint-only, no layout impact).
+              return ClipRect(
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (int c = 0; c < rowLen; c++)
+                        AnimatedContainer(
+                          key: ValueKey(widget.layout[r][c]),
+                          width: _enteringCards
+                                  .contains(widget.layout[r][c])
+                              ? 0.0
+                              : cardWidth,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          child: _buildCardContent(r, c),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         DragTarget<String>(
           onWillAcceptWithDetails: (details) {
