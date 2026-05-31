@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'draggable_grid.dart';
 import 'models/setup_form_controller.dart';
@@ -23,15 +24,30 @@ class SetupEdit extends StatefulWidget {
   State<StatefulWidget> createState() => _SetupEditState();
 }
 
+const _kEditGridHintSeen = 'edit_grid_hint_seen';
+
 class _SetupEditState extends State<SetupEdit> {
   final _formKey = GlobalKey<FormState>();
   late final SetupFormController _controller;
   final TextEditingController _commentController = TextEditingController();
+  bool _showGridHint = false;
 
   @override
   void initState() {
     super.initState();
     _controller = SetupFormController(widget.setup);
+    _initGridHint();
+  }
+
+  Future<void> _initGridHint() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_kEditGridHintSeen) ?? false) return;
+    final hasAnyField = _controller.fork.layout.isNotEmpty ||
+        _controller.shock.layout.isNotEmpty ||
+        _controller.tyres.layout.isNotEmpty;
+    if (!hasAnyField) return;
+    await prefs.setBool(_kEditGridHintSeen, true);
+    if (mounted) setState(() => _showGridHint = true);
   }
 
   @override
@@ -150,13 +166,39 @@ class _SetupEditState extends State<SetupEdit> {
   Widget _buildSection(
     SectionFormController section, {
     bool showComponentInfo = false,
+    bool showGridHint = false,
   }) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         if (showComponentInfo)
           _ComponentInfoFields(
             serialNumberController: section.serialNumber,
             infoUrlController: section.infoUrl,
+          ),
+        if (showGridHint && section.layout.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.touch_app,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text('Tap to edit',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(width: 16),
+                Icon(Icons.drag_indicator,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text('Hold to reorder',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
           ),
         _buildSectionGrid(section),
         Padding(
@@ -201,12 +243,23 @@ class _SetupEditState extends State<SetupEdit> {
                   },
                 ),
                 const TitleWithIcon(title: 'Fork', icon: SuspensionIcons.fork),
-                _buildSection(_controller.fork, showComponentInfo: true),
+                _buildSection(_controller.fork,
+                    showComponentInfo: true,
+                    showGridHint: _showGridHint &&
+                        _controller.fork.layout.isNotEmpty),
                 const TitleWithIcon(
                     title: 'Shock', icon: SuspensionIcons.shock),
-                _buildSection(_controller.shock, showComponentInfo: true),
+                _buildSection(_controller.shock,
+                    showComponentInfo: true,
+                    showGridHint: _showGridHint &&
+                        _controller.fork.layout.isEmpty &&
+                        _controller.shock.layout.isNotEmpty),
                 const TitleWithIcon(title: 'Tyres', icon: SuspensionIcons.tyre),
-                _buildSection(_controller.tyres),
+                _buildSection(_controller.tyres,
+                    showGridHint: _showGridHint &&
+                        _controller.fork.layout.isEmpty &&
+                        _controller.shock.layout.isEmpty &&
+                        _controller.tyres.layout.isNotEmpty),
               ],
             ),
           ),
