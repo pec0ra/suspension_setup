@@ -1,0 +1,6 @@
+• Ajouter, supprimer et réorganiser les champs de suspension par glisser-déposer
+• Voir un instantané de votre configuration à n'importe quelle entrée de l'historique
+• Partager votre fichier de sauvegarde directement depuis l'application
+• Écran dédié pour modifier les valeurs individuelles
+• Prise en charge des valeurs négatives
+• Message d'erreur approprié lors de l'ouverture d'un fichier d'une version plus récente

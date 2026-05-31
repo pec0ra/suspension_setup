@@ -1,0 +1,6 @@
+• Add, remove, and reorder suspension fields with drag-and-drop
+• View a snapshot of your setup at any past history entry
+• Share your backup file directly from the app
+• Dedicated screen for editing individual values
+• Allow negative values
+• Graceful error message when opening a file from a newer app version

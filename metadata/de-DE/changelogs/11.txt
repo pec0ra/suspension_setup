@@ -1,0 +1,6 @@
+• Federungsfelder per Drag-and-Drop hinzufügen, entfernen und neu anordnen
+• Momentaufnahme der Einstellungen zu jedem Verlaufseintrag anzeigen
+• Sicherungsdatei direkt aus der App teilen
+• Eigener Bildschirm zum Bearbeiten einzelner Werte
+• Negative Werte werden unterstützt
+• Verständliche Fehlermeldung beim Öffnen einer Datei aus einer neueren App-Version
