@@ -75,9 +75,11 @@ class SetupStorageModel extends ChangeNotifier {
     final dir = await getTemporaryDirectory();
     final tempFile = File('${dir.path}/$fileName');
     await tempFile.writeAsBytes(fileContent);
-    await Share.shareXFiles(
-      [XFile(tempFile.path, mimeType: 'application/json')],
-      subject: 'Suspension Setup backup',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(tempFile.path, mimeType: 'application/json')],
+        subject: 'Suspension Setup backup',
+      ),
     );
   }
 
