@@ -77,8 +77,10 @@ jobs:
             > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
           IPA=$(find $RUNNER_TEMP/ipa -name "*.ipa" | head -1)
           echo "Uploading: $IPA"
+          # --apple-id works around Xcode 26 altool failing to resolve the app from the bundle id
           xcrun altool --upload-app \
             -f "$IPA" \
             --type ios \
+            --apple-id 6766823456 \
             --api-key "$API_KEY_ID" \
             --api-issuer "$API_ISSUER_ID"
