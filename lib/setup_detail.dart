@@ -134,40 +134,72 @@ class _ComponentInfo extends StatelessWidget {
           const Divider(height: 0),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: Row(
-              children: [
-                if (sn != null) ...[
-                  Icon(Icons.tag,
-                      size: 16, color: theme.colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Serial Number',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                Widget? serial;
+                if (sn != null) {
+                  serial = Row(
+                    children: [
+                      Icon(Icons.tag,
+                          size: 16, color: theme.colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Serial Number',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            Text(sn, style: theme.textTheme.bodyMedium),
+                          ],
                         ),
-                        Text(sn, style: theme.textTheme.bodyMedium),
-                      ],
-                    ),
-                  ),
-                ],
-                if (url != null)
-                  OutlinedButton.icon(
-                    onPressed: () => launchUrl(
-                      Uri.parse(url),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                    icon: const Icon(Icons.open_in_browser),
-                    label: const Text('Manufacturer Page'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-              ],
+                      ),
+                    ],
+                  );
+                }
+
+                final link = url != null
+                    ? OutlinedButton.icon(
+                        onPressed: () => launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        icon: const Icon(Icons.open_in_browser),
+                        label: const Text('Manufacturer Page'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      )
+                    : null;
+
+                // Side by side when there's room, stacked on narrow screens so
+                // the serial number gets full width instead of wrapping.
+                final sideBySide = serial != null &&
+                    link != null &&
+                    constraints.maxWidth >= 400;
+                if (sideBySide) {
+                  return Row(
+                    children: [
+                      Expanded(child: serial),
+                      const SizedBox(width: 12),
+                      link,
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (serial != null) serial,
+                    if (serial != null && link != null)
+                      const SizedBox(height: 12),
+                    if (link != null) link,
+                  ],
+                );
+              },
             ),
           ),
         ],
