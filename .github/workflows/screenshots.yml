@@ -5,7 +5,7 @@ on:
 
 jobs:
   ios:
-    runs-on: macos-latest
+    runs-on: macos-15
 
     strategy:
       fail-fast: false
@@ -33,7 +33,7 @@ jobs:
       - name: Take screenshots
         run: |
           DEVICE_ID=$(xcrun simctl list devices available \
-            | grep "${{ matrix.device.name }}" | head -1 | grep -oE '[0-9A-F-]{36}')
+            | grep "${{ matrix.device.name }}" | head -1 | grep -oE '[0-9A-F-]{36}') || true
           if [ -z "$DEVICE_ID" ]; then
             echo "ERROR: No '${{ matrix.device.name }}' simulator found. Available simulators:"
             xcrun simctl list devices available | grep -E "iPhone|iPad"
