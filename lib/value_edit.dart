@@ -27,7 +27,6 @@ class _ValueEditState extends State<ValueEdit> {
   final _formKey = GlobalKey<FormState>();
   late final SetupFormController _controller;
   late final bool _ownsController;
-  final TextEditingController _commentController = TextEditingController();
 
   @override
   void initState() {
@@ -43,7 +42,6 @@ class _ValueEditState extends State<ValueEdit> {
 
   @override
   void dispose() {
-    _commentController.dispose();
     if (_ownsController) _controller.dispose();
     super.dispose();
   }
@@ -54,7 +52,6 @@ class _ValueEditState extends State<ValueEdit> {
       context: context,
       controller: _controller,
       originalSetup: widget.setup,
-      commentController: _commentController,
       saveSetup: _saveSetup,
     );
   }

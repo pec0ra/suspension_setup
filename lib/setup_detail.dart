@@ -7,6 +7,7 @@ import 'package:suspension_setup/suspension_icons.dart';
 import 'package:suspension_setup/text_with_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'comment_dialog.dart';
 import 'models/setting_change.dart';
 import 'models/settings.dart';
 import 'setting_tiles.dart';
@@ -249,9 +250,7 @@ class History extends StatelessWidget {
 
     final originalComment = historyEntry.comment;
     final String autoComment;
-    if (originalComment != null &&
-        originalComment.isNotEmpty &&
-        !historyEntry.isCreationEntry) {
+    if (originalComment != null && originalComment.isNotEmpty) {
       autoComment = 'Undo: $originalComment';
     } else {
       autoComment =
@@ -331,39 +330,48 @@ class History extends StatelessWidget {
     );
   }
 
-  void _showEditCommentDialog(BuildContext context, SettingChanges entry) {
-    final controller = TextEditingController(text: entry.comment ?? '');
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit comment'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Add a comment'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newComment = controller.text.trim();
-              Navigator.pop(dialogContext);
-              final newSetup = setup.copyMutable();
-              final target = newSetup.history.firstWhere(
-                (e) => e.id == entry.id,
-              );
-              target.comment = newComment.isEmpty ? null : newComment;
-              await Provider.of<SetupStorageModel>(context, listen: false)
-                  .upsertSetup(newSetup);
-            },
-            child: const Text('Save'),
-          ),
-        ],
+  Future<void> _showAddNoteDialog(BuildContext context) async {
+    final model = Provider.of<SetupStorageModel>(context, listen: false);
+    final messenger = ScaffoldMessenger.of(context);
+    final note = await showCommentDialog(
+      context,
+      title: 'Add note',
+      hintText: 'Add a note',
+      requireNonEmpty: true,
+    );
+    if (note == null) return;
+    final newSetup = setup.copyMutable();
+    newSetup.history.add(SettingChanges(
+      changes: [],
+      date: DateTime.now(),
+      comment: note,
+    ));
+    await model.upsertSetup(newSetup);
+    messenger.showSnackBar(
+      const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Note added'),
       ),
-    ).then((_) => controller.dispose());
+    );
+  }
+
+  Future<void> _showEditCommentDialog(
+      BuildContext context, SettingChanges entry) async {
+    final model = Provider.of<SetupStorageModel>(context, listen: false);
+    final newComment = await showCommentDialog(
+      context,
+      title: 'Edit comment',
+      initialText: entry.comment ?? '',
+      hintText: 'Add a comment',
+      // A comment-only entry (note or creation) would become a blank card if
+      // its comment were cleared, so require text in that case.
+      requireNonEmpty: entry.changes.isEmpty,
+    );
+    if (newComment == null) return;
+    final newSetup = setup.copyMutable();
+    final target = newSetup.history.firstWhere((e) => e.id == entry.id);
+    target.comment = newComment.isEmpty ? null : newComment;
+    await model.upsertSetup(newSetup);
   }
 
   void _showHistoryItemSheet(BuildContext context, SettingChanges entry) {
@@ -410,7 +418,7 @@ class History extends StatelessWidget {
                 _showEditCommentDialog(context, entry);
               },
             ),
-            if (!entry.isCreationEntry)
+            if (entry.changes.isNotEmpty)
               ListTile(
                 leading: const Icon(Icons.undo),
                 title: const Text('Undo this change'),
@@ -436,7 +444,14 @@ class History extends StatelessWidget {
           endIndent: 8,
           height: 48,
         ),
-        const TitleWithIcon(title: 'History'),
+        TitleWithIcon(
+          title: 'History',
+          action: IconButton(
+            icon: const Icon(Icons.add_comment),
+            tooltip: 'Add note',
+            onPressed: () => _showAddNoteDialog(context),
+          ),
+        ),
         for (SettingChanges settingChange in setup.history.reversed)
           Card(
             color: Color.alphaBlend(
@@ -459,13 +474,13 @@ class History extends StatelessWidget {
                                 .add_Hm()
                                 .format(settingChange.date)),
                           ),
-                          Divider(
-                            color: theme.colorScheme.secondary
-                                .withValues(alpha: 0.3),
-                            height: 0,
-                          ),
                           if (settingChange.comment != null &&
-                              settingChange.comment!.isNotEmpty)
+                              settingChange.comment!.isNotEmpty) ...[
+                            Divider(
+                              color: theme.colorScheme.secondary
+                                  .withValues(alpha: 0.3),
+                              height: 0,
+                            ),
                             Padding(
                               padding: const EdgeInsets.only(
                                 left: 16,
@@ -477,11 +492,13 @@ class History extends StatelessWidget {
                                 icon: Icons.info_outline,
                               ),
                             ),
-                          Divider(
-                            color: theme.colorScheme.secondary
-                                .withValues(alpha: 0.3),
-                            height: 0,
-                          ),
+                          ],
+                          if (settingChange.changes.isNotEmpty)
+                            Divider(
+                              color: theme.colorScheme.secondary
+                                  .withValues(alpha: 0.3),
+                              height: 0,
+                            ),
                         ]),
                   ),
                   for (SettingChange change in settingChange.changes)

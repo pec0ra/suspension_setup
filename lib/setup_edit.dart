@@ -29,7 +29,6 @@ const _kEditGridHintSeen = 'edit_grid_hint_seen';
 class _SetupEditState extends State<SetupEdit> {
   final _formKey = GlobalKey<FormState>();
   late final SetupFormController _controller;
-  final TextEditingController _commentController = TextEditingController();
   bool _showGridHint = false;
 
   @override
@@ -52,7 +51,6 @@ class _SetupEditState extends State<SetupEdit> {
 
   @override
   void dispose() {
-    _commentController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -71,7 +69,6 @@ class _SetupEditState extends State<SetupEdit> {
       context: context,
       controller: _controller,
       originalSetup: widget.setup,
-      commentController: _commentController,
       saveSetup: _saveSetup,
     );
   }
@@ -183,16 +180,14 @@ class _SetupEditState extends State<SetupEdit> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.touch_app,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant),
+                    size: 14, color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text('Tap to edit',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(width: 16),
                 Icon(Icons.drag_indicator,
-                    size: 14,
-                    color: theme.colorScheme.onSurfaceVariant),
+                    size: 14, color: theme.colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text('Hold to reorder',
                     style: theme.textTheme.bodySmall
@@ -245,8 +240,8 @@ class _SetupEditState extends State<SetupEdit> {
                 const TitleWithIcon(title: 'Fork', icon: SuspensionIcons.fork),
                 _buildSection(_controller.fork,
                     showComponentInfo: true,
-                    showGridHint: _showGridHint &&
-                        _controller.fork.layout.isNotEmpty),
+                    showGridHint:
+                        _showGridHint && _controller.fork.layout.isNotEmpty),
                 const TitleWithIcon(
                     title: 'Shock', icon: SuspensionIcons.shock),
                 _buildSection(_controller.shock,

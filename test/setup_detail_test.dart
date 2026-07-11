@@ -26,6 +26,34 @@ Widget _harness(Setup setup) {
   );
 }
 
+/// Fake that keeps the setup in memory (no disk I/O) so that `upsertSetup`
+/// updates the rendered state and records the last write.
+class _MutableFakeStorageModel extends SetupStorageModel {
+  _MutableFakeStorageModel(this._setup);
+  Setup _setup;
+  Setup? lastUpserted;
+
+  @override
+  Future<void> initSetups() async {}
+
+  @override
+  Setup? getSetup(String id) => id == _setup.id ? _setup : null;
+
+  @override
+  Future<void> upsertSetup(Setup setup) async {
+    lastUpserted = setup;
+    _setup = setup;
+    notifyListeners();
+  }
+}
+
+Widget _mutableHarness(Setup setup, SetupStorageModel model) {
+  return ChangeNotifierProvider<SetupStorageModel>.value(
+    value: model,
+    child: MaterialApp(home: SetupDetail(setupId: setup.id)),
+  );
+}
+
 Setup _makeSetup({String? serialNumber, String? infoUrl}) {
   final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 70);
   return Setup(
@@ -110,6 +138,98 @@ void main() {
       await tester.pump();
 
       expect(find.text('Sag: disabled (was 25 %)'), findsOneWidget);
+    });
+  });
+
+  group('Add note', () {
+    Setup makeSetupWithHistory() {
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 70);
+      return Setup(
+        id: 'test-id',
+        name: 'Trail Setup',
+        fork: SectionSettings(fields: [
+          airField
+        ], layout: [
+          [airField.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
+        history: [
+          SettingChanges(
+            changes: [],
+            date: DateTime.now(),
+            comment: 'Setup creation',
+            isCreationEntry: true,
+          ),
+        ],
+      );
+    }
+
+    testWidgets('appends a comment-only entry and blocks an empty note',
+        (tester) async {
+      final setup = makeSetupWithHistory();
+      final model = _MutableFakeStorageModel(setup);
+
+      await tester.pumpWidget(_mutableHarness(setup, model));
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Add note'));
+      await tester.pumpAndSettle();
+
+      // Save stays disabled while the field is empty.
+      final saveButton = find.widgetWithText(TextButton, 'Save');
+      expect(tester.widget<TextButton>(saveButton).onPressed, isNull);
+
+      await tester.enterText(find.byType(TextField), 'Felt harsh today');
+      await tester.pump();
+      expect(tester.widget<TextButton>(saveButton).onPressed, isNotNull);
+
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      // Persisted as a comment-only, non-creation entry.
+      final history = model.lastUpserted!.history;
+      expect(history.length, 2);
+      expect(history.last.comment, 'Felt harsh today');
+      expect(history.last.changes, isEmpty);
+      expect(history.last.isCreationEntry, isFalse);
+
+      // Rendered in the timeline.
+      expect(find.text('Felt harsh today'), findsOneWidget);
+
+      // Let the confirmation snackbar's auto-dismiss timer expire.
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('does not offer Undo for a comment-only note', (tester) async {
+      final airField = Field(name: 'Air Pressure', unit: 'PSI', value: 70);
+      final setup = Setup(
+        id: 'test-id',
+        name: 'Trail Setup',
+        fork: SectionSettings(fields: [
+          airField
+        ], layout: [
+          [airField.id]
+        ]),
+        shock: SectionSettings(fields: [], layout: []),
+        tyres: SectionSettings(fields: [], layout: []),
+        history: [
+          SettingChanges(
+            changes: [],
+            date: DateTime.now(),
+            comment: 'Felt harsh today',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_harness(setup));
+      await tester.pump();
+
+      await tester.tap(find.text('Felt harsh today'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit comment'), findsOneWidget);
+      expect(find.text('Undo this change'), findsNothing);
     });
   });
 
