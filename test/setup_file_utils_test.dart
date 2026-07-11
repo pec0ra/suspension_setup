@@ -231,6 +231,42 @@ void main() {
       expect(imported['id-2']?.name, 'XC');
     });
 
+    test('imports a v1 backup (no "setups" wrapper) via migration', () async {
+      final filePath = '${tempDir.path}/v1backup.json';
+      final v1Json = jsonEncode({
+        'id-1': {
+          'id': 'id-1',
+          'name': 'Old setup',
+          'fork': {
+            'airPressure': 100,
+            'sag': 25,
+            'lsc': 8,
+            'lsr': 6,
+            'hsc': null,
+            'hsr': null,
+            'volumeSpacer': null,
+          },
+          'shock': {
+            'airPressure': 180,
+            'sag': 30,
+            'lsc': 5,
+            'lsr': 4,
+            'hsc': null,
+            'hsr': null,
+            'volumeSpacer': null,
+          },
+          'history': [],
+        },
+      });
+      await File(filePath).writeAsString(v1Json);
+
+      final result = await SetupFileUtil.readImportFile(filePath);
+
+      expect(result, isA<BackupImport>());
+      final setups = (result as BackupImport).setups;
+      expect(setups['id-1']?.name, 'Old setup');
+    });
+
     test('throws SetupCorruptFileException when neither key is present',
         () async {
       final filePath = '${tempDir.path}/unknown.json';

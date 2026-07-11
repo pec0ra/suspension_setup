@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
@@ -53,7 +54,9 @@ class SetupFileUtil {
     try {
       final contents = await file.readAsString();
       decoded = jsonDecode(contents) as Map<String, dynamic>;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      developer.log('Failed to decode setups file',
+          name: 'SetupFileUtil', error: e, stackTrace: stackTrace);
       throw SetupCorruptFileException(
           'Could not load your setups — the file may be corrupt.', e);
     }
@@ -77,7 +80,9 @@ class SetupFileUtil {
         await writeSetups(setups, filePath);
       }
       return setups;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      developer.log('Failed to parse setups file',
+          name: 'SetupFileUtil', error: e, stackTrace: stackTrace);
       throw SetupCorruptFileException(
           'Could not load your setups — the file may be corrupt.', e);
     }
@@ -120,7 +125,9 @@ class SetupFileUtil {
     try {
       final contents = await file.readAsString();
       decoded = jsonDecode(contents) as Map<String, dynamic>;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      developer.log('Failed to decode import file',
+          name: 'SetupFileUtil', error: e, stackTrace: stackTrace);
       throw SetupCorruptFileException(
           'Could not load the file — it may be corrupt.', e);
     }
@@ -142,7 +149,8 @@ class SetupFileUtil {
         final setupsJson = migrated['setups'] as Map<String, dynamic>;
         final setup = Setup.fromJson(setupsJson['_'] as Map<String, dynamic>);
         return SingleSetupImport(setup);
-      } else if (decoded.containsKey('setups')) {
+      } else {
+        // Full backup (any schema version, incl. v1 which has no "setups" key).
         final migrated = migrateIfNeeded(decoded);
         final setupsJson = migrated['setups'] as Map<String, dynamic>;
         final setups = setupsJson.map(
@@ -150,10 +158,10 @@ class SetupFileUtil {
               MapEntry(key, Setup.fromJson(value as Map<String, dynamic>)),
         );
         return BackupImport(setups);
-      } else {
-        throw const FormatException('No setup or setups key');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      developer.log('Failed to parse import file',
+          name: 'SetupFileUtil', error: e, stackTrace: stackTrace);
       throw SetupCorruptFileException(
           'Could not load the file — it may be corrupt.', e);
     }
