@@ -1,0 +1,3 @@
+• Share individual setups and import them onto another device
+• Add notes to your setup history
+• Improved display of serial numbers and links on small screens

@@ -1,0 +1,3 @@
+• Partager des configurations individuelles et les importer sur un autre appareil
+• Ajouter des notes à l'historique de votre configuration
+• Meilleur affichage des numéros de série et des liens sur petits écrans
