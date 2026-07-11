@@ -59,12 +59,12 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               PopupMenuItem(
-                onTap: () => _restore(context),
+                onTap: () => _import(context),
                 child: const Row(
                   spacing: 12,
                   children: [
                     Icon(Icons.file_open),
-                    Text('Restore'),
+                    Text('Import'),
                   ],
                 ),
               ),
@@ -83,7 +83,7 @@ class _HomePageState extends State<HomePage> {
           if (setupModel.loadError != null) {
             return ErrorScreenWidget.fromLoadError(
               error: setupModel.loadError!,
-              onRestore: () => _restore(context),
+              onRestore: () => _import(context),
             );
           }
           var setupList = setupModel.getSetupList();
@@ -192,6 +192,14 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text('Share'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                shareSetup(context, setup, setupModel);
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.delete, color: theme.colorScheme.error),
               title: Text('Delete',
                   style: TextStyle(color: theme.colorScheme.error)),
@@ -274,12 +282,35 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _restore(BuildContext context) async {
+  Future<void> _import(BuildContext context) async {
     final model = Provider.of<SetupStorageModel>(context, listen: false);
     final filePath = await model.pickBackupFile();
     if (filePath == null) return;
     if (!context.mounted) return;
 
+    ImportResult? result;
+    try {
+      result = await model.readImport(filePath);
+    } on SetupLoadException catch (e) {
+      if (!context.mounted) return;
+      _showImportError(context, e);
+      return;
+    }
+    if (result == null || !context.mounted) return;
+
+    switch (result) {
+      case BackupImport(:final setups):
+        await _confirmRestoreBackup(context, model, setups);
+      case SingleSetupImport(:final setup):
+        await _confirmImportSetup(context, model, setup);
+    }
+  }
+
+  Future<void> _confirmRestoreBackup(
+    BuildContext context,
+    SetupStorageModel model,
+    Map<String, Setup> setups,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -300,28 +331,58 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    if (!context.mounted) return;
+    if (confirmed != true || !context.mounted) return;
 
-    try {
-      await model.restoreFromFile(filePath);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text('Setups restored successfully')),
-      );
-    } on SetupLoadException catch (e) {
-      if (!context.mounted) return;
-      final colors = Theme.of(context).colorScheme;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+    await model.replaceAllWith(setups);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
           behavior: SnackBarBehavior.floating,
-          backgroundColor: colors.errorContainer,
-          content:
-              Text(e.message, style: TextStyle(color: colors.onErrorContainer)),
-        ),
-      );
-    }
+          content: Text('Setups restored successfully')),
+    );
+  }
+
+  Future<void> _confirmImportSetup(
+    BuildContext context,
+    SetupStorageModel model,
+    Setup setup,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Import setup \'${setup.name}\'?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await model.importSetup(setup);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Setup imported successfully')),
+    );
+  }
+
+  void _showImportError(BuildContext context, SetupLoadException e) {
+    final colors = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: colors.errorContainer,
+        content:
+            Text(e.message, style: TextStyle(color: colors.onErrorContainer)),
+      ),
+    );
   }
 }

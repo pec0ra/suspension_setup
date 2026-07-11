@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'models/setup.dart';
@@ -69,6 +72,27 @@ Future<void> showDeleteSetupDialog(
       ],
     ),
   );
+}
+
+Future<void> shareSetup(
+  BuildContext context,
+  Setup setup,
+  SetupStorageModel model,
+) async {
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await model.shareSetup(setup);
+  } else {
+    final success = await model.saveSetupToDevice(setup);
+    if (!context.mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Setup saved successfully'),
+        ),
+      );
+    }
+  }
 }
 
 void navigateToClone(BuildContext context, Setup setup, bool copyHistory,

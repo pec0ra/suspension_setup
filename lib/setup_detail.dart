@@ -573,6 +573,17 @@ class OverflowMenu extends StatelessWidget {
           ),
         ),
         PopupMenuItem(
+          onTap: () => shareSetup(
+            context,
+            setup,
+            Provider.of<SetupStorageModel>(context, listen: false),
+          ),
+          child: const Row(
+            spacing: 12,
+            children: [Icon(Icons.share), Text('Share')],
+          ),
+        ),
+        PopupMenuItem(
           onTap: () => showDeleteSetupDialog(
             context,
             setup,

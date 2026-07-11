@@ -2,7 +2,7 @@ import 'v1_to_v2.dart';
 import 'v2_to_v3.dart';
 import 'v3_to_v4.dart';
 
-const int currentSchemaVersion = 4;
+const int currentSchemaVersion = 5;
 
 Map<String, dynamic> migrateIfNeeded(Map<String, dynamic> json) {
   final version = json['schemaVersion'] as int? ?? 1;
@@ -17,5 +17,6 @@ Map<String, dynamic> migrateIfNeeded(Map<String, dynamic> json) {
   if (version < 4) {
     data = migrateV3ToV4(data);
   }
+  // v4 → v5 needs no data transform.
   return data;
 }

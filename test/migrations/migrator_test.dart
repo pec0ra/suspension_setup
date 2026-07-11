@@ -134,7 +134,7 @@ Map<String, dynamic> _v4Data() => {
 
 void main() {
   group('currentSchemaVersion', () {
-    test('is 4', () => expect(currentSchemaVersion, 4));
+    test('is 5', () => expect(currentSchemaVersion, 5));
   });
 
   group('migrateIfNeeded', () {

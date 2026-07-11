@@ -177,4 +177,96 @@ void main() {
       );
     });
   });
+
+  group('SetupFileUtil.encodeSetup', () {
+    test('wraps a single setup under the singular "setup" key', () {
+      final encoded = SetupFileUtil.encodeSetup(_makeSetup('id-1', 'Trail'));
+      final decoded = jsonDecode(encoded) as Map<String, dynamic>;
+
+      expect(decoded['schemaVersion'], currentSchemaVersion);
+      expect(decoded.containsKey('setup'), isTrue);
+      expect(decoded.containsKey('setups'), isFalse);
+      expect(decoded['setup']['name'], 'Trail');
+    });
+  });
+
+  group('SetupFileUtil.readImportFile', () {
+    test('returns null for non-existent file', () async {
+      final result =
+          await SetupFileUtil.readImportFile('${tempDir.path}/nope.json');
+      expect(result, isNull);
+    });
+
+    test('returns SingleSetupImport for a share file', () async {
+      final setup = _makeSetup('id-1', 'Enduro');
+      final filePath = '${tempDir.path}/share.json';
+      await SetupFileUtil.writeSetup(setup, filePath);
+
+      final result = await SetupFileUtil.readImportFile(filePath);
+
+      expect(result, isA<SingleSetupImport>());
+      final imported = (result as SingleSetupImport).setup;
+      expect(imported.name, 'Enduro');
+      expect(
+        imported.fork.activeFields
+            .firstWhere((f) => f.name == 'Air Pressure')
+            .value,
+        100,
+      );
+    });
+
+    test('returns BackupImport for a backup file', () async {
+      final setups = {
+        'id-1': _makeSetup('id-1', 'DH'),
+        'id-2': _makeSetup('id-2', 'XC'),
+      };
+      final filePath = '${tempDir.path}/backup.json';
+      await SetupFileUtil.writeSetups(setups, filePath);
+
+      final result = await SetupFileUtil.readImportFile(filePath);
+
+      expect(result, isA<BackupImport>());
+      final imported = (result as BackupImport).setups;
+      expect(imported.keys, containsAll(['id-1', 'id-2']));
+      expect(imported['id-2']?.name, 'XC');
+    });
+
+    test('throws SetupCorruptFileException when neither key is present',
+        () async {
+      final filePath = '${tempDir.path}/unknown.json';
+      await File(filePath).writeAsString(jsonEncode({
+        'schemaVersion': currentSchemaVersion,
+        'somethingElse': {},
+      }));
+
+      expect(
+        () => SetupFileUtil.readImportFile(filePath),
+        throwsA(isA<SetupCorruptFileException>()),
+      );
+    });
+
+    test('throws SetupCorruptFileException for corrupt JSON', () async {
+      final filePath = '${tempDir.path}/corrupt.json';
+      await File(filePath).writeAsString('not valid json {{{{');
+
+      expect(
+        () => SetupFileUtil.readImportFile(filePath),
+        throwsA(isA<SetupCorruptFileException>()),
+      );
+    });
+
+    test('throws SetupVersionTooNewException for a future-version share',
+        () async {
+      final filePath = '${tempDir.path}/future_share.json';
+      await File(filePath).writeAsString(jsonEncode({
+        'schemaVersion': currentSchemaVersion + 1,
+        'setup': _makeSetup('id-1', 'Trail').toJson(),
+      }));
+
+      expect(
+        () => SetupFileUtil.readImportFile(filePath),
+        throwsA(isA<SetupVersionTooNewException>()),
+      );
+    });
+  });
 }
